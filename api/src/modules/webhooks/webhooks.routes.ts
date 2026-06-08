@@ -9,18 +9,23 @@
 //   POST   /webhooks/:id/test  fire a test push immediately
 
 import { Router } from 'express';
-import { z } from 'zod';
+import Joi from 'joi';
 
 import { HttpError } from '../../lib/httpError';
 import { asyncHandler } from '../../middleware/asyncHandler';
 import { optionalAuth } from '../../middleware/auth';
+import { validatorHandler } from '../../middleware/validatorHandler';
 import { decodeAlertEvent } from '../../services/alerts';
 import { fireTestAlert } from './webhooks.notifier';
 import * as repo from './webhooks.repository';
 
-const createSchema = z.object({
-  url: z.string().default(''),
-  event: z.string().min(1, 'event is required'),
+const createSchema = Joi.object({
+  url: Joi.string().allow('').default(''),
+  event: Joi.string().min(1).required(),
+});
+
+const idParamSchema = Joi.object({
+  id: Joi.string().uuid().required(),
 });
 
 function toJson(row: repo.WebhookRow) {
@@ -39,8 +44,9 @@ webhooksRouter.use(optionalAuth);
 
 webhooksRouter.post(
   '/',
+  validatorHandler(createSchema, 'body'),
   asyncHandler(async (req, res) => {
-    const { url, event } = createSchema.parse(req.body);
+    const { url, event } = req.body as { url: string; event: string };
     // Reject malformed alert events early so the worker never sees garbage.
     if (!decodeAlertEvent(event)) {
       throw HttpError.badRequest(
@@ -62,6 +68,7 @@ webhooksRouter.get(
 
 webhooksRouter.get(
   '/:id',
+  validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
     const row = await repo.getById(req.params.id!);
     if (!row) throw HttpError.notFound('Webhook not found');
@@ -71,6 +78,7 @@ webhooksRouter.get(
 
 webhooksRouter.delete(
   '/:id',
+  validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
     const ok = await repo.remove(req.params.id!);
     if (!ok) throw HttpError.notFound('Webhook not found');
@@ -80,6 +88,7 @@ webhooksRouter.delete(
 
 webhooksRouter.post(
   '/:id/test',
+  validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
     const row = await repo.getById(req.params.id!);
     if (!row) throw HttpError.notFound('Webhook not found');

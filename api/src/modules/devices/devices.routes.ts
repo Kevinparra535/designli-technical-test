@@ -4,16 +4,17 @@
 // the app's DeviceRegistrationModel: { id, token, platform, active, createdAt }.
 
 import { Router } from 'express';
-import { z } from 'zod';
+import Joi from 'joi';
 
 import { asyncHandler } from '../../middleware/asyncHandler';
 import { optionalAuth } from '../../middleware/auth';
+import { validatorHandler } from '../../middleware/validatorHandler';
 
 import * as repo from './devices.repository';
 
-const registerSchema = z.object({
-  token: z.string().min(1, 'token is required'),
-  platform: z.enum(['android', 'ios']).default('android'),
+const registerSchema = Joi.object({
+  token: Joi.string().min(1).required(),
+  platform: Joi.string().valid('android', 'ios').default('android'),
 });
 
 function toJson(row: repo.DeviceRow) {
@@ -31,8 +32,9 @@ export const devicesRouter = Router();
 devicesRouter.post(
   '/',
   optionalAuth,
+  validatorHandler(registerSchema, 'body'),
   asyncHandler(async (req, res) => {
-    const { token, platform } = registerSchema.parse(req.body);
+    const { token, platform } = req.body as { token: string; platform: string };
     const row = await repo.upsertByToken(token, platform, req.user?.sub ?? null);
     res.status(201).json(toJson(row));
   }),

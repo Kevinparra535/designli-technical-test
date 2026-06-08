@@ -7,7 +7,12 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import {
+  boomErrorHandler,
+  errorHandler,
+  logErrors,
+  notFoundHandler,
+} from './middleware/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
 import { webhooksRouter } from './modules/webhooks/webhooks.routes';
@@ -35,6 +40,10 @@ export function createApp() {
   app.use('/webhooks', webhooksRouter);
 
   app.use(notFoundHandler);
+
+  // Error-handling middleware chain (order matters), per the Notion guide.
+  app.use(logErrors);
+  app.use(boomErrorHandler);
   app.use(errorHandler);
 
   return app;

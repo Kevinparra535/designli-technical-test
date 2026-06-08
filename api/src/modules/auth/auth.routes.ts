@@ -1,24 +1,28 @@
 // src/modules/auth/auth.routes.ts
 
 import { Router } from 'express';
-import { z } from 'zod';
+import Joi from 'joi';
 
 import { asyncHandler } from '../../middleware/asyncHandler';
 import { requireAuth } from '../../middleware/auth';
+import { validatorHandler } from '../../middleware/validatorHandler';
 
 import * as service from './auth.service';
 
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+const credentialsSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required().messages({
+    'string.min': 'Password must be at least 6 characters',
+  }),
 });
 
 export const authRouter = Router();
 
 authRouter.post(
   '/register',
+  validatorHandler(credentialsSchema, 'body'),
   asyncHandler(async (req, res) => {
-    const { email, password } = credentialsSchema.parse(req.body);
+    const { email, password } = req.body as { email: string; password: string };
     const result = await service.register(email, password);
     res.status(201).json(result);
   }),
@@ -26,8 +30,9 @@ authRouter.post(
 
 authRouter.post(
   '/login',
+  validatorHandler(credentialsSchema, 'body'),
   asyncHandler(async (req, res) => {
-    const { email, password } = credentialsSchema.parse(req.body);
+    const { email, password } = req.body as { email: string; password: string };
     const result = await service.login(email, password);
     res.json(result);
   }),

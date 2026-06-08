@@ -47,8 +47,9 @@ registered device, then **deactivates the alert** so it fires only once.
 src/
   config/      env loading, pg pool
   db/          schema.sql + idempotent migrate (runs on boot)
-  lib/         HttpError
-  middleware/  asyncHandler, JWT auth (require/optional), error handler
+  lib/         HttpError (boomified)
+  middleware/  asyncHandler, JWT auth (require/optional), validatorHandler (Joi),
+               error chain (logErrors → boomErrorHandler → errorHandler)
   modules/
     auth/      register / login / me  (bcrypt + JWT)
     devices/   POST /devices  (upsert FCM token)
@@ -57,6 +58,27 @@ src/
   worker/      alertWorker (the polling loop)
   app.ts       Express wiring
   server.ts    bootstrap: migrate → listen → start worker
+```
+
+---
+
+## Middlewares (siguiendo la guía de Notion)
+
+The middleware layer follows the guide's *Middlewares* section exactly:
+
+- **Populares**: `helmet`, `cors`, `express.json()`.
+- **Validación con Joi**: `validatorHandler(schema, property)` factory — validates
+  `body`/`params` and forwards a `Boom.badRequest` on failure.
+- **Manejo de errores con Boom** (`@hapi/boom`): `HttpError` is boomified, so all
+  errors share one payload shape.
+- **Cadena de error middlewares** (en este orden):
+  `logErrors` → `boomErrorHandler` → `errorHandler`.
+
+Error responses use Boom's payload shape:
+
+```json
+{ "statusCode": 400, "error": "Bad Request",
+  "message": "\"email\" must be a valid email", "details": [ ... ] }
 ```
 
 ---
