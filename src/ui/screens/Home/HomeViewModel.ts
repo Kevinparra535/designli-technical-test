@@ -6,6 +6,7 @@ import { TYPES } from '@/config/types';
 import { Stock } from '@/domain/entities/Stock';
 
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
+import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 
 import Logger from '@/ui/utils/Logger';
 
@@ -22,6 +23,8 @@ export class HomeViewModel {
   constructor(
     @inject(TYPES.GetStockListUseCase)
     private readonly getStockListUseCase: GetStockListUseCase,
+    @inject(TYPES.RegisterPushNotificationsUseCase)
+    private readonly registerPushNotificationsUseCase: RegisterPushNotificationsUseCase,
   ) {
     makeAutoObservable(this);
   }
@@ -39,9 +42,30 @@ export class HomeViewModel {
       this.logger.info(`Stock list fetched: ${stocks.length} symbols`);
       this.logger.info('Sample (first 10):', stocks.slice(0, 10));
 
+      // Register this device for FCM price-alert pushes. Non-blocking: a backend
+      // that is down must not break the screen. (Ideally moves to post-login.)
+      void this.registerForPushNotifications();
+
       this.updateLoadingState(false, null, 'init');
     } catch (error) {
       this.handleError(error, 'init');
+    }
+  }
+
+  private async registerForPushNotifications(): Promise<void> {
+    try {
+      const registration = await this.registerPushNotificationsUseCase.run();
+      if (registration.error) {
+        this.logger.warn(`Push not registered: ${registration.error}`);
+        return;
+      }
+      this.logger.info('Push registered for device:', registration.token);
+    } catch (error) {
+      this.logger.error(
+        `Push registration failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
   }
 

@@ -35,23 +35,36 @@ import {
   FinnhubManagerImpl,
 } from '@/data/network/finnhubManager';
 import {
+  NotificationApiManager,
+  NotificationApiManagerImpl,
+} from '@/data/network/notificationApiManager';
+import {
+  ExpoPushNotificationManager,
+  PushNotificationManager,
+} from '@/data/network/pushNotificationManager';
+import {
   WebhookManager,
   WebhookManagerImpl,
 } from '@/data/network/webhookManager';
 
+import { NotificationServiceImpl } from '@/data/services/NotificationServiceImpl';
 import { StockAlertServiceImpl } from '@/data/services/StockAlertServiceImpl';
 import { StockServiceImpl } from '@/data/services/StockServiceImpl';
 
+import { NotificationRepositoryImpl } from '@/data/repositories/NotificationRepositoryImpl';
 import { StockAlertRepositoryImpl } from '@/data/repositories/StockAlertRepositoryImpl';
 import { StockRepositoryImpl } from '@/data/repositories/StockRepositoryImpl';
 
+import type { NotificationRepository } from '@/domain/repositories/NotificationRepository';
 import type { StockAlertRepository } from '@/domain/repositories/StockAlertRepository';
 import type { StockRepository } from '@/domain/repositories/StockRepository';
+import type { NotificationService } from '@/domain/services/NotificationService';
 import type { StockAlertService } from '@/domain/services/StockAlertService';
 import type { StockService } from '@/domain/services/StockService';
 
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
+import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
@@ -74,6 +87,16 @@ container
   .to(WebhookManagerImpl)
   .inSingletonScope();
 
+container
+  .bind<PushNotificationManager>(TYPES.PushNotificationManager)
+  .to(ExpoPushNotificationManager)
+  .inSingletonScope();
+
+container
+  .bind<NotificationApiManager>(TYPES.NotificationApiManager)
+  .to(NotificationApiManagerImpl)
+  .inSingletonScope();
+
 // Services (domain contract → data impl; wraps a manager, maps to domain)
 container
   .bind<StockService>(TYPES.StockService)
@@ -83,6 +106,11 @@ container
 container
   .bind<StockAlertService>(TYPES.StockAlertService)
   .to(StockAlertServiceImpl)
+  .inSingletonScope();
+
+container
+  .bind<NotificationService>(TYPES.NotificationService)
+  .to(NotificationServiceImpl)
   .inSingletonScope();
 
 // Repositories (domain contract → data impl; delegates to a service)
@@ -96,6 +124,11 @@ container
   .to(StockAlertRepositoryImpl)
   .inSingletonScope();
 
+container
+  .bind<NotificationRepository>(TYPES.NotificationRepository)
+  .to(NotificationRepositoryImpl)
+  .inSingletonScope();
+
 // UseCases
 container
   .bind<GetStockListUseCase>(TYPES.GetStockListUseCase)
@@ -104,6 +137,12 @@ container
 container
   .bind<CreateStockAlertUseCase>(TYPES.CreateStockAlertUseCase)
   .to(CreateStockAlertUseCase);
+
+container
+  .bind<RegisterPushNotificationsUseCase>(
+    TYPES.RegisterPushNotificationsUseCase,
+  )
+  .to(RegisterPushNotificationsUseCase);
 
 // UI ViewModels
 container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);

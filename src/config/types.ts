@@ -19,18 +19,25 @@ export const TYPES = {
   HttpManager: Symbol.for('HttpManager'),
   FinnhubManager: Symbol.for('FinnhubManager'),
   WebhookManager: Symbol.for('WebhookManager'),
+  PushNotificationManager: Symbol.for('PushNotificationManager'),
+  NotificationApiManager: Symbol.for('NotificationApiManager'),
 
   // domain — services (contracts; impl in data, wraps a manager + maps to domain)
   StockService: Symbol.for('StockService'),
   StockAlertService: Symbol.for('StockAlertService'),
+  NotificationService: Symbol.for('NotificationService'),
 
   // domain — repositories (contracts; impl in data, delegates to a service)
   StockRepository: Symbol.for('StockRepository'),
   StockAlertRepository: Symbol.for('StockAlertRepository'),
+  NotificationRepository: Symbol.for('NotificationRepository'),
 
   // domain — useCases
   GetStockListUseCase: Symbol.for('GetStockListUseCase'),
   CreateStockAlertUseCase: Symbol.for('CreateStockAlertUseCase'),
+  RegisterPushNotificationsUseCase: Symbol.for(
+    'RegisterPushNotificationsUseCase',
+  ),
 
   // ui — viewModels
   HomeViewModel: Symbol.for('HomeViewModel'),

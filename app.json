@@ -14,6 +14,8 @@
       }
     },
     "android": {
+      "package": "com.kevcoder.designlitechnicaltest",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +27,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": ["expo-notifications"],
     "extra": {
       "eas": {
         "projectId": "b3063856-6aed-4ebe-82ff-1eeb87455547"

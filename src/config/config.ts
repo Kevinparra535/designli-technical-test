@@ -16,6 +16,11 @@ export const config = {
     'https://api.example.com',
   WEBHOOK_API_KEY: process.env.EXPO_PUBLIC_WEBHOOK_API_KEY || '',
 
+  // The user's own Node backend (device-token registration, alert evaluation,
+  // FCM push). Point EXPO_PUBLIC_BACKEND_BASE_URL at it (e.g. http://<lan-ip>:3000).
+  BACKEND_BASE_URL:
+    process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 'http://localhost:3000',
+
   API_ROUTES: {
     STOCK_SYMBOLS: '/stock/symbol',
     STOCK_QUOTE: '/stock/quote',
@@ -23,5 +28,6 @@ export const config = {
     STOCK_CANDLES: '/stock/candle',
     COMPANY_NEWS: '/company-news',
     WEBHOOKS: '/webhooks',
+    DEVICES: '/devices',
   },
 };
