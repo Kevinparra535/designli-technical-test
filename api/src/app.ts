@@ -7,12 +7,12 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
-import { isFcmEnabled } from './services/fcm';
-import { isFinnhubConfigured } from './services/finnhub';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
 import { devicesRouter } from './modules/devices/devices.routes';
 import { webhooksRouter } from './modules/webhooks/webhooks.routes';
+import { isFcmEnabled } from './services/fcm';
+import { isFinnhubConfigured } from './services/finnhub';
 
 export function createApp() {
   const app = express();
