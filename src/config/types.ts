@@ -17,6 +17,8 @@
 export const TYPES = {
   // data
   HttpManager: Symbol.for('HttpManager'),
+  FinnhubManager: Symbol.for('FinnhubManager'),
+  WebhookManager: Symbol.for('WebhookManager'),
 
   // ui
   HomeViewModel: Symbol.for('HomeViewModel'),

@@ -8,12 +8,12 @@
 //   - ViewModels: `**/*ViewModel.ts` (en RN son .ts, no .tsx — no renderean JSX)
 //   - DI bootstrap: `src/config/di.ts`
 //
-// Estructura de este proyecto (sin geo/, map/, navigation/ ni carpeta
-// viewModels/ — los VM viven junto a su screen en ui/screens/<Feature>/):
-//   src/config/      → types.ts, di.ts
-//   src/domain/      → entities/, repositories/, services/, useCases/
-//   src/data/        → models/, repositories/, services/
-//   src/ui/          → screens/<Feature>/, components/, styles/, utils/
+// Estructura real de este proyecto (los VM viven junto a su screen en
+// ui/screens/<Feature>/; el cliente HTTP vive en data/network/):
+//   src/config/      → config.ts, types.ts, di.ts
+//   src/domain/      → useCases/ (+ entities/, repositories/, services/ al crecer)
+//   src/data/        → network/ (HTTP managers: axios, finnhub, webhook)
+//   src/ui/          → navigation/, screens/<Feature>/, components/, styles/, utils/
 const expoConfig = require('eslint-config-expo/flat');
 const eslintConfigPrettier = require('eslint-config-prettier');
 const simpleImportSort = require('eslint-plugin-simple-import-sort');
@@ -89,13 +89,15 @@ module.exports = [
             // 5. Domain — useCases (la API que el VM consume)
             ['^@/domain/useCases/'],
 
-            // 6. Data — services -> repositories -> models
+            // 6. Data — network (HTTP) -> services -> repositories -> models
+            ['^@/data/network/'],
             ['^@/data/services/'],
             ['^@/data/repositories/'],
             ['^@/data/models/'],
 
-            // 7. UI — components reusables -> screens -> styles/utils
+            // 7. UI — components -> navigation -> screens -> styles/utils
             ['^@/ui/components/'],
+            ['^@/ui/navigation/'],
             ['^@/ui/screens/'],
             ['^@/ui/styles/', '^@/ui/utils/'],
 
@@ -126,8 +128,14 @@ module.exports = [
             ['^@/domain/entities/'],
             ['^@/domain/(repositories|services)/'],
             ['^@/domain/useCases/'],
-            ['^@/data/services/', '^@/data/repositories/', '^@/data/models/'],
+            [
+              '^@/data/network/',
+              '^@/data/services/',
+              '^@/data/repositories/',
+              '^@/data/models/',
+            ],
             ['^@/ui/components/'],
+            ['^@/ui/navigation/'],
             ['^@/ui/styles/', '^@/ui/utils/'],
             ['^@/'],
             // Padre antes que hermano (clasica regla)
@@ -190,11 +198,13 @@ module.exports = [
           groups: [
             ['^reflect-metadata', '^inversify', '^@?\\w'],
             ['^@/config/types$'],
+            ['^@/data/network/'],
             ['^@/data/services/'],
             ['^@/data/repositories/'],
             ['^@/data/models/'],
             ['^@/domain/(repositories|services)/'],
             ['^@/domain/useCases/'],
+            ['^@/ui/navigation/'],
             ['^@/ui/screens/'],
             ['^@/'],
             ['^\\.'],

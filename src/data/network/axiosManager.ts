@@ -9,10 +9,22 @@ import { TYPES } from '@/config/types';
 import Logger from '@/ui/utils/Logger';
 
 export interface HttpManager {
-  get(url: string): Promise<any>;
-  post(url: string, body: object): Promise<any>;
-  put(url: string, body: object): Promise<any>;
-  delete(url: string): Promise<any>;
+  get<T = any>(
+    url: string,
+    filters?: Record<string, any>,
+    config?: AxiosRequestConfig,
+  ): Promise<T>;
+  post<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T>;
+  put<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T>;
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>;
 }
 
 /**
@@ -35,8 +47,8 @@ export class AxiosHttpManager implements HttpManager {
       baseURL: config.BASE_URL,
       timeout: 1000 * 60 * 5, // 5 minutes
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     this.http.interceptors.request.use(this._handleRequest);
@@ -53,7 +65,7 @@ export class AxiosHttpManager implements HttpManager {
   public async get<T>(
     url: string,
     filters?: Record<string, any>,
-    config?: AxiosRequestConfig
+    config?: AxiosRequestConfig,
   ): Promise<T> {
     const searchParams = [
       'value',
@@ -62,7 +74,7 @@ export class AxiosHttpManager implements HttpManager {
       'user_id',
       'trace_id',
       'step_type',
-      'association_name'
+      'association_name',
     ];
 
     const filter_: Record<string, any> = {};
@@ -74,24 +86,31 @@ export class AxiosHttpManager implements HttpManager {
     }
 
     const otherFilters = Object.fromEntries(
-      Object.entries(filters || {}).filter(([key]) => !searchParams.includes(key))
+      Object.entries(filters || {}).filter(
+        ([key]) => !searchParams.includes(key),
+      ),
     );
 
     const configQuery = {
       addQueryPrefix: true,
-      encode: false
+      encode: false,
     };
 
     const queries = qs.stringify(
       {
         ...otherFilters,
-        filter_: Object.keys(filter_).length ? JSON.stringify(filter_) : undefined
+        filter_: Object.keys(filter_).length
+          ? JSON.stringify(filter_)
+          : undefined,
       },
-      configQuery
+      configQuery,
     );
 
     const checkURL = url?.endsWith('//') ? url.slice(url.length - 1) : url;
-    const { data } = await this.http.get<T>(encodeURI(`${checkURL}${queries}`), config);
+    const { data } = await this.http.get<T>(
+      encodeURI(`${checkURL}${queries}`),
+      config,
+    );
 
     return data;
   }
@@ -103,7 +122,11 @@ export class AxiosHttpManager implements HttpManager {
    * @param config - The Axios request configuration.
    * @returns A promise that resolves to the response data.
    */
-  public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async post<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
     const response = await this.http.post<T>(url, data, config);
     return response.data;
   }
@@ -115,7 +138,11 @@ export class AxiosHttpManager implements HttpManager {
    * @param config - The Axios request configuration.
    * @returns A promise that resolves to the response data.
    */
-  public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async put<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
     const response = await this.http.put<T>(url, data, config);
     return response.data;
   }
@@ -160,13 +187,17 @@ export class AxiosHttpManager implements HttpManager {
     if (error.code === 'ENETUNREACH') {
       this.logger.error('Network Unreachable');
       return Promise.reject(
-        new Error('Network unreachable. Please check your internet connection.')
+        new Error(
+          'Network unreachable. Please check your internet connection.',
+        ),
       );
     }
 
     if (error.code === 'ECONNABORTED') {
       this.logger.error('Request timed out');
-      return Promise.reject(new Error('Request timed out. Please try again later.'));
+      return Promise.reject(
+        new Error('Request timed out. Please try again later.'),
+      );
     }
 
     if (!error.response) {
@@ -178,7 +209,8 @@ export class AxiosHttpManager implements HttpManager {
     switch (error.response.status) {
       case 400:
         errorMessage =
-          'Bad Request: ' + (error.response.data?.message || error.response.data?.error);
+          'Bad Request: ' +
+          (error.response.data?.message || error.response.data?.error);
         break;
       case 401:
         errorMessage = 'Unauthorized: ' + error.response.data?.message;
@@ -200,7 +232,7 @@ export class AxiosHttpManager implements HttpManager {
     return Promise.reject({
       message: error.response.data?.message || errorMessage,
       statusCode: error.response.status,
-      data: error.response.data
+      data: error.response.data,
     });
   };
 }

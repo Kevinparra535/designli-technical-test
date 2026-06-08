@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { Text,View } from 'react-native';
+import { Text, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
 
 import { container } from '@/config/di';

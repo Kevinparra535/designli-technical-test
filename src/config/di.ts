@@ -28,6 +28,15 @@
 import { Container } from 'inversify';
 
 import { AxiosHttpManager, HttpManager } from '@/data/network/axiosManager';
+import {
+  FinnhubManager,
+  FinnhubManagerImpl,
+} from '@/data/network/finnhubManager';
+import {
+  WebhookManager,
+  WebhookManagerImpl,
+} from '@/data/network/webhookManager';
+
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 
 import { TYPES } from './types';
@@ -40,7 +49,15 @@ container
   .to(AxiosHttpManager)
   .inSingletonScope();
 
-// UI ViewModels
 container
-  .bind<HomeViewModel>(TYPES.HomeViewModel)
-  .to(HomeViewModel);
+  .bind<FinnhubManager>(TYPES.FinnhubManager)
+  .to(FinnhubManagerImpl)
+  .inSingletonScope();
+
+container
+  .bind<WebhookManager>(TYPES.WebhookManager)
+  .to(WebhookManagerImpl)
+  .inSingletonScope();
+
+// UI ViewModels
+container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);

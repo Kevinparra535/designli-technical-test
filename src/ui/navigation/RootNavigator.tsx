@@ -10,20 +10,20 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: true,
+  <NavigationContainer>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+      }}
+    >
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          title: 'Home',
+          headerBackVisible: false,
         }}
-      >
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: 'Home',
-            headerBackVisible: false,
-          }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+      />
+    </Stack.Navigator>
+  </NavigationContainer>
+);

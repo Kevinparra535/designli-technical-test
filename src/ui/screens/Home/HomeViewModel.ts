@@ -26,7 +26,11 @@ export class HomeViewModel {
     }
   }
 
-  private updateLoadingState(isLoading: boolean, error: string | null, type: ICalls) {
+  private updateLoadingState(
+    isLoading: boolean,
+    error: string | null,
+    type: ICalls,
+  ) {
     runInAction(() => {
       if (type === 'init') {
         this.isInitLoading = isLoading;
