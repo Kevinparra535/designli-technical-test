@@ -10,7 +10,7 @@ its own:
 | 2. Create a stock price alert | `POST /webhooks` (alert encoded in `event`) |
 | 3. List of stocks / 4. Graph | Served by Finnhub directly from the app |
 | 5. **FCM push when price crosses the alert** | Alert worker + `firebase-admin` |
-| Extra: Docker deployment | `Dockerfile` + `docker-compose.yml` |
+| Extra: Docker | `docker-compose.yml` (Postgres para desarrollo, estilo guía) |
 
 Stack: **Express + TypeScript + PostgreSQL + JWT (bcrypt/jsonwebtoken) +
 firebase-admin + Finnhub**, following the Notion "Node JS" course stack
@@ -120,27 +120,28 @@ The FCM `data` payload sent to the device (all string-valued, per FCM):
 
 ---
 
-## Run it
+## Run it (desarrollo)
 
-### Option A — Docker (recommended, covers the extra credit)
-
-```bash
-cp .env.example .env        # then set FINNHUB_API_KEY (+ FIREBASE_SERVICE_ACCOUNT for real push)
-docker compose up --build
-```
-
-This starts **PostgreSQL** and the **API** (port `3000`), waits for the DB to be
-healthy, runs migrations, and launches the worker.
-
-### Option B — Local Node (needs a Postgres running)
+Postgres corre en Docker (estilo guía de Notion); el backend Node corre en el
+host con hot-reload.
 
 ```bash
-cp .env.example .env        # point PG* at your Postgres
+cp .env.example .env        # luego pon FINNHUB_API_KEY (+ FIREBASE_SERVICE_ACCOUNT para push real)
+docker compose up -d        # 1) levanta solo PostgreSQL (puerto 5432)
 npm install
-npm run dev                 # tsx watch; migrations run on boot
+npm run dev                 # 2) API local con tsx watch; migraciones al arrancar
 ```
 
-Production build: `npm run build && npm start`.
+Las credenciales por defecto del compose coinciden con `env.ts`
+(`stocks` / `postgres` / `postgres`), así que `npm run dev` conecta sin tocar nada.
+
+Comandos útiles de la DB:
+
+```bash
+docker compose ps           # contenedores activos
+docker compose down         # detener (los datos persisten en el volumen pgdata)
+docker compose down -v      # detener y BORRAR los datos
+```
 
 ---
 
