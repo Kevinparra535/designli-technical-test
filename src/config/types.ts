@@ -14,4 +14,6 @@
 //   GetAllClientUseCase:  Symbol.for('GetAllClientUseCase'),  // domain
 //   ClientsViewModel:     Symbol.for('ClientsViewModel'),     // ui
 
-export const TYPES = {} as const;
+export const TYPES = {
+  HttpManager: Symbol.for('HttpManager'),
+} as const;

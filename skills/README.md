@@ -13,6 +13,7 @@ injection resistance.
 | [feature-scaffold.md](./feature-scaffold.md)               | Scaffold a full vertical slice (entity → model → repo → use cases → VM → screen → DI). |
 | [viewmodel-pattern.md](./viewmodel-pattern.md)             | The canonical MobX ViewModel shape (`ICalls`, `updateLoadingState`, `handleError`).    |
 | [design-system.md](./design-system.md)                     | Token-driven, presentational UI primitives.                                            |
+| [http-client-manager.md](./http-client-manager.md)         | Centralized HTTP client for all API requests; singleton service in data layer.         |
 | [pr-checklist.md](./pr-checklist.md)                       | Architecture-compliance review gate before merge.                                      |
 
 ## XML tag convention used by every skill
