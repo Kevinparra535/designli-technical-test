@@ -1,3 +1,7 @@
+// reflect-metadata MUST be imported once, before any @injectable/@inject code
+// runs, so Inversify can read the metadata emitted by the decorators.
+import 'reflect-metadata';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';
