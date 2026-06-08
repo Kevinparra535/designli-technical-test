@@ -28,12 +28,19 @@
 import { Container } from 'inversify';
 
 import { AxiosHttpManager, HttpManager } from '@/data/network/axiosManager';
+import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 
 import { TYPES } from './types';
 
 export const container = new Container();
 
+// Data services
 container
   .bind<HttpManager>(TYPES.HttpManager)
   .to(AxiosHttpManager)
   .inSingletonScope();
+
+// UI ViewModels
+container
+  .bind<HomeViewModel>(TYPES.HomeViewModel)
+  .to(HomeViewModel);

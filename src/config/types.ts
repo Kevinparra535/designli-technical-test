@@ -15,5 +15,9 @@
 //   ClientsViewModel:     Symbol.for('ClientsViewModel'),     // ui
 
 export const TYPES = {
+  // data
   HttpManager: Symbol.for('HttpManager'),
+
+  // ui
+  HomeViewModel: Symbol.for('HomeViewModel'),
 } as const;
