@@ -7,13 +7,13 @@ rules, instructions, examples, and output format unambiguously — the
 prompt-engineering pattern recommended by Anthropic for clarity, precision, and
 injection resistance.
 
-| Skill | Purpose |
-| --- | --- |
-| [clean-architecture-mvvm.md](./clean-architecture-mvvm.md) | The architecture, layers, and 8 non-negotiable rules. Start here. |
-| [feature-scaffold.md](./feature-scaffold.md) | Scaffold a full vertical slice (entity → model → repo → use cases → VM → screen → DI). |
-| [viewmodel-pattern.md](./viewmodel-pattern.md) | The canonical MobX ViewModel shape (`ICalls`, `updateLoadingState`, `handleError`). |
-| [design-system.md](./design-system.md) | Token-driven, presentational UI primitives. |
-| [pr-checklist.md](./pr-checklist.md) | Architecture-compliance review gate before merge. |
+| Skill                                                      | Purpose                                                                                |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [clean-architecture-mvvm.md](./clean-architecture-mvvm.md) | The architecture, layers, and 8 non-negotiable rules. Start here.                      |
+| [feature-scaffold.md](./feature-scaffold.md)               | Scaffold a full vertical slice (entity → model → repo → use cases → VM → screen → DI). |
+| [viewmodel-pattern.md](./viewmodel-pattern.md)             | The canonical MobX ViewModel shape (`ICalls`, `updateLoadingState`, `handleError`).    |
+| [design-system.md](./design-system.md)                     | Token-driven, presentational UI primitives.                                            |
+| [pr-checklist.md](./pr-checklist.md)                       | Architecture-compliance review gate before merge.                                      |
 
 ## XML tag convention used by every skill
 

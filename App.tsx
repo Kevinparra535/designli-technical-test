@@ -1,5 +1,5 @@
-import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 // Clean Architecture + MVVM scaffold (Expo + TypeScript).
 // Real features live under src/ui/screens/<Feature>. This landing screen exists
@@ -9,10 +9,14 @@ export default function App() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Clean Architecture Stack</Text>
-        <Text style={styles.subtitle}>Expo · TypeScript · MobX · Inversify</Text>
+        <Text style={styles.subtitle}>
+          Expo · TypeScript · MobX · Inversify
+        </Text>
         <View style={styles.card}>
           <Text style={styles.flow}>ui → viewModel → useCase → domain</Text>
-          <Text style={styles.flowSub}>data implements the domain contracts</Text>
+          <Text style={styles.flowSub}>
+            data implements the domain contracts
+          </Text>
         </View>
         <Text style={styles.hint}>
           Scaffold ready. Add your first feature under{'\n'}
@@ -26,7 +30,12 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B1220' },
-  content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  content: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
   title: { color: '#F8FAFC', fontSize: 26, fontWeight: '700' },
   subtitle: { color: '#94A3B8', fontSize: 14, marginTop: 6 },
   card: {
@@ -39,5 +48,11 @@ const styles = StyleSheet.create({
   },
   flow: { color: '#38BDF8', fontSize: 15, fontWeight: '600' },
   flowSub: { color: '#64748B', fontSize: 12, marginTop: 6 },
-  hint: { color: '#CBD5E1', fontSize: 13, textAlign: 'center', marginTop: 28, lineHeight: 20 },
+  hint: {
+    color: '#CBD5E1',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 28,
+    lineHeight: 20,
+  },
 });

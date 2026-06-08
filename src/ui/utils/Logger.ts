@@ -28,7 +28,7 @@ export default class Logger {
 
   private log(level: Level, message: string, args: unknown[]): void {
     const line = `[${this.tag}] ${message}`;
-    // eslint-disable-next-line no-console
+
     console[level](line, ...args);
   }
 }

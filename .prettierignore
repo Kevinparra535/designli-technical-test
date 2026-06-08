@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+android/
+ios/
+coverage/
+dist/
+package-lock.json
+assets/
+
+# Skills are structured XML+CDATA prompt files; prettier's markdown parser
+# reflows the embedded code and breaks indentation. Keep them as authored.
+skills/

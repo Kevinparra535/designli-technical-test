@@ -68,14 +68,20 @@ export class ClientsViewModel {
     this.updateLoadingState(true, null, 'items');
     try {
       const response = await this.getAllClientUseCase.run();
-      runInAction(() => { this.isItemsResponse = response; });
+      runInAction(() => {
+        this.isItemsResponse = response;
+      });
       this.updateLoadingState(false, null, 'items');
     } catch (error) {
       this.handleError(error, 'items');
     }
   }
 
-  private updateLoadingState(isLoading: boolean, error: string | null, type: ICalls) {
+  private updateLoadingState(
+    isLoading: boolean,
+    error: string | null,
+    type: ICalls,
+  ) {
     runInAction(() => {
       if (type === 'items') {
         this.isItemsLoading = isLoading;
@@ -86,7 +92,9 @@ export class ClientsViewModel {
   }
 
   private handleError(error: unknown, type: ICalls) {
-    const message = `Error in ${type}: ${error instanceof Error ? error.message : String(error)}`;
+    const message = `Error in ${type}: ${
+      error instanceof Error ? error.message : String(error)
+    }`;
     this.logger.error(message);
     this.updateLoadingState(false, message, type);
   }

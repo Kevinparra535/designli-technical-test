@@ -38,40 +38,39 @@ import { Pressable, Text, StyleSheet } from 'react-native';
 import { colors, radii, spacing } from './theme';
 
 type Props = {
-  label: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary';
-  disabled?: boolean;
+label: string;
+onPress: () => void;
+variant?: 'primary' | 'secondary';
+disabled?: boolean;
 };
 
 export function Button({ label, onPress, variant = 'primary', disabled }: Props) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={[styles.base, styles[variant], disabled && styles.disabled]}
-    >
-      <Text style={styles.label}>{label}</Text>
-    </Pressable>
-  );
+return (
+<Pressable
+accessibilityRole="button"
+accessibilityState={{ disabled: !!disabled }}
+disabled={disabled}
+onPress={onPress}
+style={[styles.base, styles[variant], disabled && styles.disabled]} >
+<Text style={styles.label}>{label}</Text>
+</Pressable>
+);
 }
 
 const styles = StyleSheet.create({
-  base: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.md, alignItems: 'center' },
-  primary: { backgroundColor: colors.accent },
-  secondary: { backgroundColor: colors.surface },
-  disabled: { opacity: 0.5 },
-  label: { color: colors.onAccent, fontWeight: '600' },
+base: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.md, alignItems: 'center' },
+primary: { backgroundColor: colors.accent },
+secondary: { backgroundColor: colors.surface },
+disabled: { opacity: 0.5 },
+label: { color: colors.onAccent, fontWeight: '600' },
 });
-    ]]></code>
-  </example>
+]]></code>
+</example>
 
-  <output_format>
-    One fenced block per file (primitive + any token file edits). Note new tokens
-    added.
-  </output_format>
+<output_format>
+One fenced block per file (primitive + any token file edits). Note new tokens
+added.
+</output_format>
 
   <related>
     <skill>skills/clean-architecture-mvvm.md</skill>

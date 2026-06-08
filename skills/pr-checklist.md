@@ -32,10 +32,10 @@
     3. If any item fails, conclude "CHANGES REQUESTED"; otherwise "APPROVED".
   </instructions>
 
-  <output_format>
-    A markdown table: | # | Rule | Result | Evidence |. Then a final verdict line:
-    `APPROVED` or `CHANGES REQUESTED`.
-  </output_format>
+<output_format>
+A markdown table: | # | Rule | Result | Evidence |. Then a final verdict line:
+`APPROVED` or `CHANGES REQUESTED`.
+</output_format>
 
   <related>
     <skill>skills/clean-architecture-mvvm.md</skill>

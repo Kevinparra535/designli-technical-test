@@ -1,5 +1,6 @@
-// reflect-metadata MUST be imported once, before any @injectable/@inject code
-// runs, so Inversify can read the metadata emitted by the decorators.
+// reflect-metadata MUST be the FIRST import: it installs the Reflect polyfill
+// that Inversify reads at decorator-evaluation time. This file is exempt from
+// import-sort (see eslint.config.js) so the polyfill always stays on top.
 import 'reflect-metadata';
 
 import { registerRootComponent } from 'expo';

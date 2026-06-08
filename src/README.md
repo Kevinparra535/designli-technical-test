@@ -8,14 +8,14 @@ ui  ──▶  viewModel  ──▶  useCase  ──▶  domain (contracts)
 data (implementations) ───────────────────┘  (implements the contracts)
 ```
 
-| Layer | Folder | Depends on | May NOT import |
-| --- | --- | --- | --- |
-| UI | `ui/` | ViewModels | data, services |
-| ViewModel | `ui/screens/<Feature>/<Feature>ViewModel.ts` | UseCases | navigation, alerts, hooks |
-| UseCase | `domain/useCases/` | domain contracts (interfaces) | data implementations |
-| Domain | `domain/` | nothing (pure) | any framework |
-| Data | `data/` | domain contracts (to implement them) | ui, viewModel |
-| Config | `config/` | everything (composition root) | — |
+| Layer     | Folder                                       | Depends on                           | May NOT import            |
+| --------- | -------------------------------------------- | ------------------------------------ | ------------------------- |
+| UI        | `ui/`                                        | ViewModels                           | data, services            |
+| ViewModel | `ui/screens/<Feature>/<Feature>ViewModel.ts` | UseCases                             | navigation, alerts, hooks |
+| UseCase   | `domain/useCases/`                           | domain contracts (interfaces)        | data implementations      |
+| Domain    | `domain/`                                    | nothing (pure)                       | any framework             |
+| Data      | `data/`                                      | domain contracts (to implement them) | ui, viewModel             |
+| Config    | `config/`                                    | everything (composition root)        | —                         |
 
 ## The 7 non-negotiable rules
 

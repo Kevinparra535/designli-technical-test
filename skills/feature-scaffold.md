@@ -46,6 +46,7 @@
     7. DI registration     → edit `src/config/types.ts` and `src/config/di.ts`:
        add a `Symbol.for(...)` per injectable; bind Service + RepositoryImpl as
        singletons, UseCases + ViewModel as transient.
+
   </instructions>
 
   <example name="usecase">
@@ -87,7 +88,9 @@ export const ClientsScreen = observer(() => {
     () => container.get<ClientsViewModel>(TYPES.ClientsViewModel),
     [],
   );
-  useEffect(() => { vm.loadAll(); }, [vm]);
+  useEffect(() => {
+    vm.loadAll();
+  }, [vm]);
   // render vm.isItemsResponse / vm.isItemsLoading / vm.isItemsError ...
 });
     ]]></code>

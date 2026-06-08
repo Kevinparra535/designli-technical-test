@@ -2,9 +2,9 @@
 //
 // Inversify container bootstrap — the single composition root of the app.
 //
-// reflect-metadata is imported at the app entry (index.ts), but we import it
-// here too so this module is safe to load in isolation (e.g. unit tests that
-// build a container).
+// reflect-metadata (the decorator polyfill) is loaded once by the app entry
+// (index.ts) and, in tests, via your jest `setupFiles`. It must be evaluated
+// before any @injectable/@inject class imported here is constructed.
 //
 // Binding scopes (non-negotiable):
 // - Services & RepositoryImpl → .inSingletonScope()
@@ -25,7 +25,6 @@
 // Screens resolve ViewModels with container.get(TYPES.X). Tests do NOT use the
 // container — they instantiate the class directly with mocked dependencies.
 
-import 'reflect-metadata';
 import { Container } from 'inversify';
 
 export const container = new Container();

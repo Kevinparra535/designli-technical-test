@@ -27,6 +27,7 @@
                          services/ (interfaces), useCases/
       src/data/        → models/ (DTOs), repositories/ (impl), services/ (impl)
       src/ui/          → screens/<Feature>/, components/, utils/Logger.ts
+
   </context>
 
   <rules>
@@ -60,12 +61,12 @@
     <item>Using a bare string instead of `Symbol.for(...)` as a TYPES id.</item>
   </forbidden>
 
-  <output_format>
-    When generating code, output one fenced code block per file, each preceded by
-    its path comment (e.g. `// src/domain/useCases/GetAllClientUseCase.ts`).
-    List the `types.ts` / `di.ts` edits explicitly. End with a one-line note of
-    which of the 8 rules the change touches.
-  </output_format>
+<output_format>
+When generating code, output one fenced code block per file, each preceded by
+its path comment (e.g. `// src/domain/useCases/GetAllClientUseCase.ts`).
+List the `types.ts` / `di.ts` edits explicitly. End with a one-line note of
+which of the 8 rules the change touches.
+</output_format>
 
   <related>
     <skill>skills/feature-scaffold.md</skill>
