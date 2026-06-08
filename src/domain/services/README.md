@@ -1,7 +1,12 @@
 # `domain/services`
 
-Service **interfaces** that abstract transport concerns (HTTP, Firebase, storage)
-behind a contract the data layer implements. UseCases never see these directly —
-they depend on repositories, which depend on services.
+Service **interfaces** (contracts), expressed in terms of domain entities. A
+repository depends on a service; the data-layer impl
+([`data/services`](../../data/services)) wraps a Manager and does the DTO→domain
+mapping.
 
-Example file: `ClientService.ts` (interface only).
+Chain: `useCase → repository → service → manager`. UseCases never see services
+directly (they depend on repositories) — but both repository and service are
+domain contracts.
+
+Example file: `StockService.ts` (interface only).

@@ -15,11 +15,20 @@
 //   ClientsViewModel:     Symbol.for('ClientsViewModel'),     // ui
 
 export const TYPES = {
-  // data
+  // data — network managers (raw infra)
   HttpManager: Symbol.for('HttpManager'),
   FinnhubManager: Symbol.for('FinnhubManager'),
   WebhookManager: Symbol.for('WebhookManager'),
 
-  // ui
+  // domain — services (contracts; impl in data, wraps a manager + maps to domain)
+  StockService: Symbol.for('StockService'),
+
+  // domain — repositories (contracts; impl in data, delegates to a service)
+  StockRepository: Symbol.for('StockRepository'),
+
+  // domain — useCases
+  GetStockListUseCase: Symbol.for('GetStockListUseCase'),
+
+  // ui — viewModels
   HomeViewModel: Symbol.for('HomeViewModel'),
 } as const;

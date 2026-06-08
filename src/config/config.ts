@@ -1,14 +1,23 @@
+// src/config/config.ts
+//
+// Runtime configuration. In Expo, ONLY env vars prefixed with `EXPO_PUBLIC_`
+// are inlined into the app bundle (process.env.EXPO_PUBLIC_*). Plain
+// process.env.X is undefined on device — hence every key below is EXPO_PUBLIC_.
+// Define them in `.env` (gitignored).
+
 export const config = {
-  BASE_URL: process.env.API_BASE_URL || 'https://api.example.com',
-  FINNHUB_BASE_URL: process.env.FINNHUB_BASE_URL || 'https://finnhub.io/api/v1',
-  FINNHUB_API_KEY: process.env.FINNHUB_API_KEY || '',
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.example.com',
+  FINNHUB_BASE_URL:
+    process.env.EXPO_PUBLIC_FINNHUB_BASE_URL || 'https://finnhub.io/api/v1',
+  FINNHUB_API_KEY: process.env.EXPO_PUBLIC_FINNHUB_API_KEY || '',
   WEBHOOK_BASE_URL:
-    process.env.WEBHOOK_BASE_URL ||
-    process.env.API_BASE_URL ||
+    process.env.EXPO_PUBLIC_WEBHOOK_BASE_URL ||
+    process.env.EXPO_PUBLIC_API_BASE_URL ||
     'https://api.example.com',
-  WEBHOOK_API_KEY: process.env.WEBHOOK_API_KEY || '',
+  WEBHOOK_API_KEY: process.env.EXPO_PUBLIC_WEBHOOK_API_KEY || '',
 
   API_ROUTES: {
+    STOCK_SYMBOLS: '/stock/symbol',
     STOCK_QUOTE: '/stock/quote',
     COMPANY_PROFILE: '/stock/profile2',
     STOCK_CANDLES: '/stock/candle',

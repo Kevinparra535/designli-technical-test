@@ -25,8 +25,18 @@
       src/config/      → types.ts (Inversify TYPES), di.ts (container)
       src/domain/      → entities/, repositories/ (interfaces),
                          services/ (interfaces), useCases/
-      src/data/        → models/ (DTOs), repositories/ (impl), services/ (impl)
+      src/data/        → network/ (managers), services/ (impl),
+                         repositories/ (impl), models/ (DTOs)
       src/ui/          → screens/<Feature>/, components/, utils/Logger.ts
+
+    Data chain (one way): repositoryImpl → service → manager.
+    - Manager (data/network): raw provider/SDK calls, returns DTOs.
+    - ServiceImpl (data/services): the ONLY place DTO→domain mapping happens
+      (Model.toDomain()); returns domain entities.
+    - RepositoryImpl (data/repositories): delegates to the service (passthrough).
+    Entities are pure data classes: `interface ConstructorParams` +
+    indexed-access fields + explicit constructor assignment (no Object.assign,
+    no methods). See `skills/feature-scaffold.md`.
 
   </context>
 

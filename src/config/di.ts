@@ -27,6 +27,8 @@
 
 import { Container } from 'inversify';
 
+import { TYPES } from '@/config/types';
+
 import { AxiosHttpManager, HttpManager } from '@/data/network/axiosManager';
 import {
   FinnhubManager,
@@ -37,9 +39,16 @@ import {
   WebhookManagerImpl,
 } from '@/data/network/webhookManager';
 
-import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
+import { StockServiceImpl } from '@/data/services/StockServiceImpl';
 
-import { TYPES } from './types';
+import { StockRepositoryImpl } from '@/data/repositories/StockRepositoryImpl';
+
+import type { StockRepository } from '@/domain/repositories/StockRepository';
+import type { StockService } from '@/domain/services/StockService';
+
+import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
+
+import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 
 export const container = new Container();
 
@@ -58,6 +67,23 @@ container
   .bind<WebhookManager>(TYPES.WebhookManager)
   .to(WebhookManagerImpl)
   .inSingletonScope();
+
+// Services (domain contract → data impl; wraps a manager, maps to domain)
+container
+  .bind<StockService>(TYPES.StockService)
+  .to(StockServiceImpl)
+  .inSingletonScope();
+
+// Repositories (domain contract → data impl; delegates to a service)
+container
+  .bind<StockRepository>(TYPES.StockRepository)
+  .to(StockRepositoryImpl)
+  .inSingletonScope();
+
+// UseCases
+container
+  .bind<GetStockListUseCase>(TYPES.GetStockListUseCase)
+  .to(GetStockListUseCase);
 
 // UI ViewModels
 container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);

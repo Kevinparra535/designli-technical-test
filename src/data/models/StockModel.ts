@@ -19,8 +19,8 @@ export type StockModelJson = {
   currency?: string;
   mic?: string;
   figi?: string;
-  // Finnhub may return extra fields (symbol2, isin, shareClassFIGI, …).
-  [key: string]: unknown;
+  // Finnhub DTOs may carry extra fields (symbol2, isin, shareClassFIGI, …);
+  // structural typing lets them pass through — we only read what we map below.
 };
 
 export class StockModel {

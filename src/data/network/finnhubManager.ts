@@ -37,6 +37,19 @@ export interface FinnhubSymbolSearchItem {
   type: string;
 }
 
+export interface FinnhubStockSymbolItem {
+  currency: string;
+  description: string;
+  displaySymbol: string;
+  figi: string;
+  isin: string | null;
+  mic: string;
+  shareClassFIGI: string;
+  symbol: string;
+  symbol2: string;
+  type: string;
+}
+
 export interface FinnhubCandles {
   c: number[]; // Close prices
   h: number[]; // High prices
@@ -60,6 +73,7 @@ export interface FinnhubNewsItem {
 }
 
 export interface FinnhubManager {
+  getStockSymbols(exchange: string): Promise<FinnhubStockSymbolItem[]>;
   searchSymbol(query: string): Promise<FinnhubSymbolSearchItem[]>;
   getQuote(symbol: string): Promise<FinnhubQuote>;
   getCompanyProfile(symbol: string): Promise<FinnhubCompanyProfile>;
@@ -101,6 +115,11 @@ export class FinnhubManagerImpl implements FinnhubManager {
       { addQueryPrefix: true, encode: false },
     );
     return `${this.baseUrl}${path}${query}`;
+  }
+
+  async getStockSymbols(exchange: string): Promise<FinnhubStockSymbolItem[]> {
+    const url = this.buildUrl('/stock/symbol', { exchange });
+    return this.http.get<FinnhubStockSymbolItem[]>(url);
   }
 
   async searchSymbol(query: string): Promise<FinnhubSymbolSearchItem[]> {

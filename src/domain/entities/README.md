@@ -1,13 +1,17 @@
 # `domain/entities`
 
-Business entities as **classes** (not interfaces) so they can carry domain
-methods. No framework or infrastructure imports.
+Business entities as **classes** (not interfaces). Pure data carriers with no
+framework or infrastructure imports.
 
-Conventions:
+Conventions (see `src/domain/entities/Stock.ts`):
 
-- A `XxxConstructorParams` type for the constructor.
-- An index signature `[key: string]: any` for untyped backend fields (ADR 003).
-- `Object.assign(this, params)` at the end of the constructor.
-- Domain helpers live here (e.g. `displayName()`, `isCorporateEmail()`).
+- A local `export interface ConstructorParams` (named EXACTLY that), with the
+  fields, an optional `error?: string | null`, and a `[key: string]: any` index
+  signature for untyped backend fields.
+- The class declares each field with an **indexed-access type**
+  (`public id: ConstructorParams['id'];`) and also carries `[key: string]: any`.
+- The constructor takes `(model: ConstructorParams)` and assigns each field
+  **explicitly** (`this.id = model.id;`). Do NOT use `Object.assign`.
+- Pure data class — no domain methods.
 
-Example file: `Client.ts`.
+Example file: `Stock.ts`.
