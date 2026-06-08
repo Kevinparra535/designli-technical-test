@@ -22,13 +22,17 @@ export const TYPES = {
 
   // domain — services (contracts; impl in data, wraps a manager + maps to domain)
   StockService: Symbol.for('StockService'),
+  StockAlertService: Symbol.for('StockAlertService'),
 
   // domain — repositories (contracts; impl in data, delegates to a service)
   StockRepository: Symbol.for('StockRepository'),
+  StockAlertRepository: Symbol.for('StockAlertRepository'),
 
   // domain — useCases
   GetStockListUseCase: Symbol.for('GetStockListUseCase'),
+  CreateStockAlertUseCase: Symbol.for('CreateStockAlertUseCase'),
 
   // ui — viewModels
   HomeViewModel: Symbol.for('HomeViewModel'),
+  CreateStockAlertViewModel: Symbol.for('CreateStockAlertViewModel'),
 } as const;

@@ -39,15 +39,21 @@ import {
   WebhookManagerImpl,
 } from '@/data/network/webhookManager';
 
+import { StockAlertServiceImpl } from '@/data/services/StockAlertServiceImpl';
 import { StockServiceImpl } from '@/data/services/StockServiceImpl';
 
+import { StockAlertRepositoryImpl } from '@/data/repositories/StockAlertRepositoryImpl';
 import { StockRepositoryImpl } from '@/data/repositories/StockRepositoryImpl';
 
+import type { StockAlertRepository } from '@/domain/repositories/StockAlertRepository';
 import type { StockRepository } from '@/domain/repositories/StockRepository';
+import type { StockAlertService } from '@/domain/services/StockAlertService';
 import type { StockService } from '@/domain/services/StockService';
 
+import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 
+import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 
 export const container = new Container();
@@ -74,10 +80,20 @@ container
   .to(StockServiceImpl)
   .inSingletonScope();
 
+container
+  .bind<StockAlertService>(TYPES.StockAlertService)
+  .to(StockAlertServiceImpl)
+  .inSingletonScope();
+
 // Repositories (domain contract → data impl; delegates to a service)
 container
   .bind<StockRepository>(TYPES.StockRepository)
   .to(StockRepositoryImpl)
+  .inSingletonScope();
+
+container
+  .bind<StockAlertRepository>(TYPES.StockAlertRepository)
+  .to(StockAlertRepositoryImpl)
   .inSingletonScope();
 
 // UseCases
@@ -85,5 +101,12 @@ container
   .bind<GetStockListUseCase>(TYPES.GetStockListUseCase)
   .to(GetStockListUseCase);
 
+container
+  .bind<CreateStockAlertUseCase>(TYPES.CreateStockAlertUseCase)
+  .to(CreateStockAlertUseCase);
+
 // UI ViewModels
 container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);
+container
+  .bind<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel)
+  .to(CreateStockAlertViewModel);

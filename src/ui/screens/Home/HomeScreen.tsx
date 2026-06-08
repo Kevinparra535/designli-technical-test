@@ -1,17 +1,24 @@
 import { useEffect, useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
+import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
+
 import { HomeViewModel } from './HomeViewModel';
+
+type HomeNavigation = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export const HomeScreen = observer(() => {
   const vm = useMemo(
     () => container.get<HomeViewModel>(TYPES.HomeViewModel),
     [],
   );
+  const navigation = useNavigation<HomeNavigation>();
 
   useEffect(() => {
     vm.initialize();
@@ -19,7 +26,7 @@ export const HomeScreen = observer(() => {
 
   if (vm.isInitLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.centered}>
         <Text>Loading...</Text>
       </View>
     );
@@ -27,15 +34,42 @@ export const HomeScreen = observer(() => {
 
   if (vm.isInitError) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: 'red' }}>Error: {vm.isInitError}</Text>
+      <View style={styles.centered}>
+        <Text style={styles.error}>Error: {vm.isInitError}</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Welcome to Home!</Text>
+    <View style={styles.centered}>
+      <Text style={styles.title}>Welcome to Home!</Text>
+
+      <Pressable
+        onPress={() => navigation.navigate('CreateStockAlert')}
+        accessibilityRole="button"
+        style={styles.button}
+      >
+        <Text style={styles.buttonText}>Create price alert</Text>
+      </Pressable>
     </View>
   );
+});
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 24,
+    padding: 24,
+  },
+  title: { fontSize: 18, fontWeight: '600', color: '#0F172A' },
+  error: { color: 'red' },
+  button: {
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });
