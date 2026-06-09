@@ -24,6 +24,7 @@ export const colors = {
 
   // Semantics
   up: '#1FE08A', // positive / brand
+  up2: '#12B873', // brand gradient end (isotype)
   upDim: 'rgba(31,224,138,0.14)',
   upInk: '#062613', // text on solid green (primary button)
   down: '#FF5C6C', // negative

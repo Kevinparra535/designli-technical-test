@@ -3,6 +3,7 @@
 // Barrel for the design-system primitives. Screens import from '@/ui/components'.
 
 export { Appear } from './Appear';
+export { BrandMark } from './BrandMark';
 export { Button } from './Button';
 export { Delta } from './Delta';
 export { Field } from './Field';

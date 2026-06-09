@@ -23,6 +23,7 @@ type Props = {
   disabled?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   autoCapitalize?: TextInputProps['autoCapitalize'];
+  secureTextEntry?: boolean;
   accessibilityLabel?: string;
 };
 
@@ -38,6 +39,7 @@ export function Field({
   disabled,
   keyboardType,
   autoCapitalize,
+  secureTextEntry,
   accessibilityLabel,
 }: Props) {
   const [focused, setFocused] = useState(false);
@@ -89,6 +91,7 @@ export function Field({
           editable={!disabled}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          secureTextEntry={secureTextEntry}
           autoCorrect={false}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

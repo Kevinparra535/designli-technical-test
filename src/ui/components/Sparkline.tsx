@@ -43,7 +43,8 @@ export function Sparkline({
   fill = true,
   strokeWidth = 2,
 }: Props) {
-  const gid = useId();
+  // Strip ':' from React's useId — invalid inside an SVG url(#id) reference.
+  const gid = `sl${useId().replace(/:/g, '')}`;
   if (!data || data.length < 2) return null;
 
   const isUp = up === undefined ? data[data.length - 1] >= data[0] : up;

@@ -13,12 +13,11 @@ import Logger from '@/ui/utils/Logger';
 
 // App-global session state. Bound as a SINGLETON (the rare global-VM exception)
 // so both LoginScreen and RootNavigator observe the same instance.
+/** Credentials handed in by the login screen (react-hook-form + zod). */
+export type Credentials = { email: string; password: string };
+
 @injectable()
 export class SessionViewModel {
-  // ── Form state ──────────────────────────────────────────────────────────────
-  email = '';
-  password = '';
-
   // ── Session state ─────────────────────────────────────────────────────────────
   isCheckingSession = true;
   currentUser: User | null = null;
@@ -46,20 +45,6 @@ export class SessionViewModel {
     return this.currentUser !== null;
   }
 
-  get isFormValid(): boolean {
-    return this.email.trim().length > 3 && this.password.length >= 6;
-  }
-
-  // ── Field setters ──────────────────────────────────────────────────────────────
-
-  setEmail(value: string): void {
-    this.email = value.trim();
-  }
-
-  setPassword(value: string): void {
-    this.password = value;
-  }
-
   // ── Actions ────────────────────────────────────────────────────────────────────
 
   async checkSession(): Promise<void> {
@@ -83,27 +68,18 @@ export class SessionViewModel {
     }
   }
 
-  async signIn(): Promise<boolean> {
-    if (!this.isFormValid) {
-      runInAction(() => {
-        this.submitError =
-          'Enter a valid email and a password of at least 6 characters.';
-      });
-      return false;
-    }
-
+  async signIn(credentials: Credentials): Promise<boolean> {
     runInAction(() => {
       this.isSubmitting = true;
       this.submitError = null;
     });
     try {
       const user = await this.loginUseCase.run({
-        email: this.email,
-        password: this.password,
+        email: credentials.email,
+        password: credentials.password,
       });
       runInAction(() => {
         this.currentUser = user;
-        this.password = '';
         this.isSubmitting = false;
       });
       return true;
@@ -126,8 +102,6 @@ export class SessionViewModel {
     }
     runInAction(() => {
       this.currentUser = null;
-      this.email = '';
-      this.password = '';
       this.submitError = null;
     });
   }

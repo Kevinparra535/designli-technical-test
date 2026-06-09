@@ -1,29 +1,47 @@
-import { useEffect, useMemo } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { z } from 'zod';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
+import type { AlertCondition } from '@/domain/entities/StockAlert';
+
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
+
+import type { SegmentOption } from '@/ui/components';
+import { Appear, Button, Field, Segmented, Txt } from '@/ui/components';
+import { colors, screenPad, spacing } from '@/ui/theme/tokens';
 
 import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
 
-const CONDITIONS = [
-  { value: 'above', label: 'Above ▲' },
-  { value: 'below', label: 'Below ▼' },
-] as const;
+// Client-side validation lives here (UI concern); the ViewModel owns the
+// business action. targetPrice stays a string for the TextInput and is parsed
+// on submit.
+const schema = z.object({
+  symbol: z.string().trim().min(1, 'Enter a symbol.'),
+  targetPrice: z
+    .string()
+    .min(1, 'Enter a price.')
+    .refine((v) => {
+      const n = Number(v.replace(',', '.'));
+      return Number.isFinite(n) && n > 0;
+    }, 'Enter a valid price greater than 0.'),
+  condition: z.enum(['above', 'below']),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+const CONDITION_OPTIONS: SegmentOption<AlertCondition>[] = [
+  { value: 'above', label: 'Above ▲', tone: 'up' },
+  { value: 'below', label: 'Below ▼', tone: 'down' },
+];
 
 export const CreateStockAlertScreen = observer(() => {
   const vm = useMemo(
@@ -36,22 +54,32 @@ export const CreateStockAlertScreen = observer(() => {
     useNavigation<
       NativeStackNavigationProp<RootStackParamList, 'CreateStockAlert'>
     >();
-
-  // Prefill the symbol when arriving from the stock detail screen.
   const route = useRoute<RouteProp<RootStackParamList, 'CreateStockAlert'>>();
   const presetSymbol = route.params?.symbol;
-  useEffect(() => {
-    if (presetSymbol) vm.setSymbol(presetSymbol);
-  }, [vm, presetSymbol]);
 
-  // Clear the form state when the screen unmounts.
-  useEffect(() => () => vm.reset(), [vm]);
+  const {
+    control,
+    handleSubmit,
+    formState: { isValid },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: 'onChange',
+    defaultValues: {
+      symbol: presetSymbol?.toUpperCase() ?? '',
+      targetPrice: '',
+      condition: 'above',
+    },
+  });
 
-  const onSubmit = async () => {
-    const symbol = vm.symbol;
-    const ok = await vm.submit();
+  const onSubmit = handleSubmit(async (values) => {
+    const symbol = values.symbol.trim().toUpperCase();
+    const ok = await vm.submit({
+      symbol,
+      targetPrice: Number(values.targetPrice.replace(',', '.')),
+      condition: values.condition,
+    });
+
     if (ok) {
-      // Close the modal first, then confirm on the screen we return to.
       navigation.goBack();
       Alert.alert(
         'Alert created',
@@ -63,134 +91,96 @@ export const CreateStockAlertScreen = observer(() => {
         vm.submitError ?? 'Please try again.',
       );
     }
-  };
-
-  const disabled = !vm.isValid || vm.isSubmitting;
+  });
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      style={styles.screen}
+      contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>New stock price alert</Text>
-      <Text style={styles.subtitle}>
-        Get notified when a stock crosses your target price.
-      </Text>
+      <Appear>
+        <Txt variant="title">New stock price alert</Txt>
+        <Txt variant="body" color="ink2" style={styles.subtitle}>
+          Get notified when a stock crosses your target price.
+        </Txt>
+      </Appear>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Symbol</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAPL"
-          placeholderTextColor="#94A3B8"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          value={vm.symbol}
-          onChangeText={(text) => vm.setSymbol(text)}
-          accessibilityLabel="Stock symbol"
+      <Appear index={1} style={styles.field}>
+        <Controller
+          control={control}
+          name="symbol"
+          render={({ field, fieldState }) => (
+            <Field
+              label="Symbol"
+              placeholder="AAPL"
+              autoCapitalize="characters"
+              value={field.value}
+              onChangeText={(t) =>
+                field.onChange(t.toUpperCase().replace(/\s/g, ''))
+              }
+              error={fieldState.error?.message}
+              accessibilityLabel="Stock symbol"
+            />
+          )}
         />
-      </View>
+      </Appear>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Target price (USD)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="150.00"
-          placeholderTextColor="#94A3B8"
-          keyboardType="decimal-pad"
-          value={vm.targetPrice}
-          onChangeText={(text) => vm.setTargetPrice(text)}
-          accessibilityLabel="Target price in US dollars"
+      <Appear index={2} style={styles.field}>
+        <Controller
+          control={control}
+          name="targetPrice"
+          render={({ field, fieldState }) => (
+            <Field
+              label="Target price"
+              prefix="$"
+              placeholder="150.00"
+              keyboardType="decimal-pad"
+              value={field.value}
+              onChangeText={(t) => field.onChange(t.replace(/[^0-9.,]/g, ''))}
+              error={fieldState.error?.message}
+              accessibilityLabel="Target price in US dollars"
+            />
+          )}
         />
-      </View>
+      </Appear>
 
-      <View style={styles.field}>
-        <Text style={styles.label}>Trigger when price is</Text>
-        <View style={styles.segment}>
-          {CONDITIONS.map(({ value, label }) => {
-            const selected = vm.condition === value;
-            return (
-              <Pressable
-                key={value}
-                onPress={() => vm.setCondition(value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                style={[
-                  styles.segmentItem,
-                  selected && styles.segmentItemActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    selected && styles.segmentTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
+      <Appear index={3} style={styles.field}>
+        <Txt variant="caption" color="ink2">
+          Trigger when price is
+        </Txt>
+        <Controller
+          control={control}
+          name="condition"
+          render={({ field }) => (
+            <Segmented
+              options={CONDITION_OPTIONS}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
+        />
+      </Appear>
+
+      <Appear index={4}>
+        <View style={styles.submit}>
+          <Button
+            label="Create alert"
+            onPress={onSubmit}
+            loading={vm.isSubmitting}
+            disabled={!isValid}
+            full
+          />
         </View>
-      </View>
-
-      <Pressable
-        onPress={onSubmit}
-        disabled={disabled}
-        accessibilityRole="button"
-        accessibilityState={{ disabled }}
-        style={[styles.submit, disabled && styles.submitDisabled]}
-      >
-        <Text style={styles.submitText}>
-          {vm.isSubmitting ? 'Saving…' : 'Create alert'}
-        </Text>
-      </Pressable>
+      </Appear>
     </ScrollView>
   );
 });
 
 const styles = StyleSheet.create({
-  container: { padding: 24, gap: 20 },
-  title: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
-  subtitle: { fontSize: 14, color: '#64748B', marginTop: -12 },
-  field: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '600', color: '#334155' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
-  },
-  segment: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  segmentItem: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  segmentItemActive: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-  segmentText: { fontSize: 15, fontWeight: '600', color: '#64748B' },
-  segmentTextActive: { color: '#2563EB' },
-  submit: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  screen: { backgroundColor: colors.bg },
+  content: { padding: screenPad, gap: spacing.xl },
+  subtitle: { marginTop: spacing.xs },
+  field: { gap: spacing.sm },
+  submit: { marginTop: spacing.xs },
 });

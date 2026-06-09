@@ -11,19 +11,19 @@ import Logger from '@/ui/utils/Logger';
 
 export type { AlertCondition };
 
-type ICalls = 'submit';
+/** Validated form payload handed in by the screen (react-hook-form + zod). */
+export type CreateAlertInput = {
+  symbol: string;
+  targetPrice: number;
+  condition: AlertCondition;
+};
 
 @injectable()
 export class CreateStockAlertViewModel {
-  // ── Form state ──────────────────────────────────────────────────────────────
-  symbol = '';
-  targetPrice = '';
-  condition: AlertCondition = 'above';
-
-  // ── Submit state (write group) ───────────────────────────────────────────────
+  // Input state + client validation now live in the screen (react-hook-form).
+  // The ViewModel owns only the business action and its async status.
   isSubmitting = false;
   submitError: string | null = null;
-  hasSubmitSuccess = false;
 
   private logger = new Logger('CreateStockAlertViewModel');
 
@@ -34,62 +34,18 @@ export class CreateStockAlertViewModel {
     makeAutoObservable(this);
   }
 
-  // ── Computed ─────────────────────────────────────────────────────────────────
-
-  get parsedPrice(): number {
-    return Number(this.targetPrice.replace(',', '.'));
-  }
-
-  get isSymbolValid(): boolean {
-    return this.symbol.trim().length > 0;
-  }
-
-  get isPriceValid(): boolean {
-    return (
-      this.targetPrice.trim().length > 0 &&
-      Number.isFinite(this.parsedPrice) &&
-      this.parsedPrice > 0
-    );
-  }
-
-  get isValid(): boolean {
-    return this.isSymbolValid && this.isPriceValid;
-  }
-
-  // ── Field setters ────────────────────────────────────────────────────────────
-
-  setSymbol(value: string): void {
-    this.symbol = value.toUpperCase().replace(/\s/g, '');
-  }
-
-  setTargetPrice(value: string): void {
-    // Keep only digits and a single decimal separator.
-    this.targetPrice = value.replace(/[^0-9.,]/g, '');
-  }
-
-  setCondition(value: AlertCondition): void {
-    this.condition = value;
-  }
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
-
-  async submit(): Promise<boolean> {
-    if (!this.isValid) {
-      this.updateLoadingState(
-        false,
-        'Enter a symbol and a valid price greater than 0.',
-        'submit',
-      );
-      return false;
-    }
-
-    this.updateLoadingState(true, null, 'submit');
+  /** Create the alert. Returns true on success so the screen can react. */
+  async submit(input: CreateAlertInput): Promise<boolean> {
+    runInAction(() => {
+      this.isSubmitting = true;
+      this.submitError = null;
+    });
     try {
       const draft = new StockAlert({
         id: '',
-        symbol: this.symbol,
-        targetPrice: this.parsedPrice,
-        condition: this.condition,
+        symbol: input.symbol,
+        targetPrice: input.targetPrice,
+        condition: input.condition,
         active: true,
         createdAt: null,
         error: null,
@@ -99,54 +55,25 @@ export class CreateStockAlertViewModel {
       this.logger.info('Stock price alert created:', created);
 
       runInAction(() => {
-        this.hasSubmitSuccess = true;
+        this.isSubmitting = false;
       });
-      this.updateLoadingState(false, null, 'submit');
       return true;
     } catch (error) {
-      this.handleError(error, 'submit');
+      const message = `Error creating alert: ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+      this.logger.error(message);
+      runInAction(() => {
+        this.isSubmitting = false;
+        this.submitError = message;
+      });
       return false;
     }
   }
 
-  consumeSubmitResult(): void {
+  clearError(): void {
     runInAction(() => {
-      this.hasSubmitSuccess = false;
       this.submitError = null;
     });
-  }
-
-  reset(): void {
-    runInAction(() => {
-      this.symbol = '';
-      this.targetPrice = '';
-      this.condition = 'above';
-      this.isSubmitting = false;
-      this.submitError = null;
-      this.hasSubmitSuccess = false;
-    });
-  }
-
-  // ── Private helpers ──────────────────────────────────────────────────────────
-
-  private updateLoadingState(
-    isLoading: boolean,
-    error: string | null,
-    type: ICalls,
-  ) {
-    runInAction(() => {
-      if (type === 'submit') {
-        this.isSubmitting = isLoading;
-        this.submitError = error;
-      }
-    });
-  }
-
-  private handleError(error: unknown, type: ICalls) {
-    const message = `Error in ${type}: ${
-      error instanceof Error ? error.message : String(error)
-    }`;
-    this.logger.error(message);
-    this.updateLoadingState(false, message, type);
   }
 }
