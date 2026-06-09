@@ -55,7 +55,7 @@ webhooksRouter.post(
         'event must be "stock-price-alert:<SYMBOL>:<above|below>:<targetPrice>"',
       );
     }
-    const row = await repo.create(url, event, req.user?.sub ?? null);
+    const row = await repo.create(url, event, req.user?.id ?? null);
     // Watch this alert's symbol in the real-time hub straight away.
     priceHub.registerAlert(row);
     res.status(201).json(toJson(row));
@@ -65,7 +65,7 @@ webhooksRouter.post(
 webhooksRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const rows = await repo.list(req.user?.sub ?? null);
+    const rows = await repo.list(req.user?.id ?? null);
     res.json(rows.map(toJson));
   }),
 );

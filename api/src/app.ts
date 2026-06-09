@@ -15,6 +15,7 @@ import {
   notFoundHandler,
 } from './middleware/errorHandler';
 import { authRouter } from './modules/auth/auth.routes';
+import { passport } from './modules/auth/passport';
 import { devicesRouter } from './modules/devices/devices.routes';
 import { webhooksRouter } from './modules/webhooks/webhooks.routes';
 import { isFcmEnabled } from './services/fcm';
@@ -26,6 +27,7 @@ export function createApp() {
   app.use(helmet());
   app.use(cors());
   app.use(express.json());
+  app.use(passport.initialize());
 
   // Health / readiness — also reports which integrations are configured.
   app.get('/health', (_req, res) => {

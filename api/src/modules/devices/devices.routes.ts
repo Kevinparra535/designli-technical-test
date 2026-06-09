@@ -35,7 +35,7 @@ devicesRouter.post(
   validatorHandler(registerSchema, 'body'),
   asyncHandler(async (req, res) => {
     const { token, platform } = req.body as { token: string; platform: string };
-    const row = await repo.upsertByToken(token, platform, req.user?.sub ?? null);
+    const row = await repo.upsertByToken(token, platform, req.user?.id ?? null);
     res.status(201).json(toJson(row));
   }),
 );

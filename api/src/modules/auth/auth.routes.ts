@@ -1,13 +1,18 @@
 // src/modules/auth/auth.routes.ts
+//
+// Auth via Passport (LocalStrategy + JwtStrategy), as in the Notion guide.
+//   POST /auth/register  — create user (bcrypt) → { token, user }
+//   POST /auth/login     — LocalStrategy verifies creds → { token, user }
+//   GET  /auth/me        — JwtStrategy protects the route → { user }
 
 import { Router } from 'express';
 import Joi from 'joi';
 
 import { asyncHandler } from '../../middleware/asyncHandler';
-import { requireAuth } from '../../middleware/auth';
 import { validatorHandler } from '../../middleware/validatorHandler';
 
 import * as service from './auth.service';
+import { authenticateJwt, authenticateLocal } from './passport';
 
 const credentialsSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -31,15 +36,15 @@ authRouter.post(
 authRouter.post(
   '/login',
   validatorHandler(credentialsSchema, 'body'),
-  asyncHandler(async (req, res) => {
-    const { email, password } = req.body as { email: string; password: string };
-    const result = await service.login(email, password);
-    res.json(result);
-  }),
+  authenticateLocal,
+  (req, res) => {
+    // LocalStrategy populated req.user (AuthUser) on success.
+    const user = req.user!;
+    res.json({ token: service.signToken(user), user });
+  },
 );
 
-// Returns the current user from the Bearer token — handy for the app to verify
-// a stored session is still valid.
-authRouter.get('/me', requireAuth, (req, res) => {
-  res.json({ user: { id: req.user!.sub, email: req.user!.email } });
+// Protected: returns the current user from the Bearer token.
+authRouter.get('/me', authenticateJwt, (req, res) => {
+  res.json({ user: req.user });
 });

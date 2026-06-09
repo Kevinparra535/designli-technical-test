@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '../../config/env';
 import { HttpError } from '../../lib/httpError';
-import type { AuthPayload } from '../../middleware/auth';
+import type { AuthUser, JwtPayload } from '../../middleware/auth';
 
 import * as repo from './auth.repository';
 
@@ -28,13 +28,15 @@ function toPublicUser(row: repo.UserRow): PublicUser {
   };
 }
 
-function signToken(user: PublicUser): string {
-  const payload: AuthPayload = { sub: user.id, email: user.email };
+/** Sign a JWT for an authenticated user (`sub` = user id). */
+export function signToken(user: AuthUser): string {
+  const payload: JwtPayload = { sub: user.id, email: user.email };
   return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN,
   } as jwt.SignOptions);
 }
 
+/** Create a user. Returns the token + public user (used by POST /auth/register). */
 export async function register(
   email: string,
   password: string,
@@ -48,16 +50,19 @@ export async function register(
   return { token: signToken(user), user };
 }
 
-export async function login(
+/**
+ * Verify credentials for Passport's LocalStrategy. Returns the AuthUser on
+ * success; throws a Boom 401 on bad email/password.
+ */
+export async function validateUser(
   email: string,
   password: string,
-): Promise<AuthResult> {
+): Promise<AuthUser> {
   const row = await repo.findByEmail(email);
   if (!row) throw HttpError.unauthorized('Invalid credentials');
 
   const ok = await bcrypt.compare(password, row.password_hash);
   if (!ok) throw HttpError.unauthorized('Invalid credentials');
 
-  const user = toPublicUser(row);
-  return { token: signToken(user), user };
+  return { id: row.id, email: row.email };
 }

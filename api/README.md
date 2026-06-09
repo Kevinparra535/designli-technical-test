@@ -58,7 +58,8 @@ src/
   middleware/  asyncHandler, JWT auth (require/optional), validatorHandler (Joi),
                error chain (logErrors → boomErrorHandler → errorHandler)
   modules/
-    auth/      register / login / me  (bcrypt + JWT)
+    auth/      register / login / me  (Passport LocalStrategy + JwtStrategy,
+               bcrypt + JWT) — strategies/ + passport.ts
     devices/   POST /devices  (upsert FCM token)
     webhooks/  CRUD + /test for stock alerts, plus the FCM fan-out notifier
     prices/    priceHub (app logic: refs, cache, throttle, alert eval) +
@@ -90,6 +91,28 @@ Error responses use Boom's payload shape:
 { "statusCode": 400, "error": "Bad Request",
   "message": "\"email\" must be a valid email", "details": [ ... ] }
 ```
+
+---
+
+## Autenticación (Passport.js)
+
+Login con **Passport**, como el curso _Autenticación con Passport.js y JWT_ de la
+guía. Dos estrategias en `modules/auth/`:
+
+| Estrategia | Archivo | Uso |
+| --- | --- | --- |
+| **LocalStrategy** (`passport-local`) | `strategies/local.strategy.ts` | `POST /auth/login` — valida email+password (bcrypt) y deja el user en `req.user` |
+| **JwtStrategy** (`passport-jwt`) | `strategies/jwt.strategy.ts` | protege rutas; extrae el Bearer, verifica el JWT (`sub` = user id) |
+
+- `modules/auth/passport.ts` registra ambas estrategias y expone
+  `authenticateLocal` y `authenticateJwt` (este último con callback propio para
+  devolver un **401 con forma Boom**, no el texto plano por defecto de Passport).
+- `app.ts` monta `passport.initialize()` (sin sesiones — `{ session: false }`).
+- `POST /auth/register` sigue creando el usuario con bcrypt y firma el JWT.
+- `optionalAuth` se mantiene para `/devices` y `/webhooks` (aceptan llamadas
+  anónimas, pero atan al usuario si llega un Bearer válido).
+
+`req.user` es `{ id, email }` en toda la app. El token lleva `{ sub, email }`.
 
 ---
 

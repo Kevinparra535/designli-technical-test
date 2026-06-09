@@ -1,28 +1,32 @@
 // src/middleware/auth.ts
 //
-// JWT auth middleware. `requireAuth` rejects requests without a valid Bearer
-// token. `optionalAuth` decodes the token when present but never rejects — used
-// on /devices and /webhooks so the existing app (which does not yet send a
-// token) keeps working, while authenticated calls get their user_id attached.
+// Shared auth types + the `optionalAuth` middleware. Token verification for
+// *protected* routes is handled by Passport's JWT strategy (see
+// modules/auth/passport.ts); `optionalAuth` stays for /devices and /webhooks,
+// which accept anonymous calls but bind to a user when a Bearer token is present.
 
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env';
-import { HttpError } from '../lib/httpError';
 
-export interface AuthPayload {
-  sub: string; // user id
+/** The authenticated user as seen on `req.user` across the app. */
+export interface AuthUser {
+  id: string;
   email: string;
 }
 
-// Augment Express' Request with the decoded user.
+/** Shape of the signed/verified JWT payload (`sub` = user id). */
+export interface JwtPayload {
+  sub: string;
+  email: string;
+}
+
+// Make Passport's `Express.User` (and therefore `req.user`) our AuthUser.
 declare global {
-   
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
-    interface Request {
-      user?: AuthPayload;
-    }
+    interface User extends AuthUser {}
   }
 }
 
@@ -34,28 +38,15 @@ function readToken(req: Request): string | null {
   return token;
 }
 
-function verify(token: string): AuthPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET);
-  if (typeof decoded === 'string') throw new Error('Unexpected token payload');
-  return { sub: String(decoded.sub), email: String(decoded.email) };
-}
-
-export function requireAuth(req: Request, _res: Response, next: NextFunction) {
-  const token = readToken(req);
-  if (!token) return next(HttpError.unauthorized('Missing Bearer token'));
-  try {
-    req.user = verify(token);
-    next();
-  } catch {
-    next(HttpError.unauthorized('Invalid or expired token'));
-  }
-}
-
+/** Decode a Bearer token if present; never rejects (anonymous = no req.user). */
 export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   const token = readToken(req);
   if (token) {
     try {
-      req.user = verify(token);
+      const decoded = jwt.verify(token, env.JWT_SECRET);
+      if (typeof decoded !== 'string') {
+        req.user = { id: String(decoded.sub), email: String(decoded.email) };
+      }
     } catch {
       // Ignore — treat as anonymous.
     }
