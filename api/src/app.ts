@@ -7,6 +7,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
+import { env } from './config/env';
 import {
   boomErrorHandler,
   errorHandler,
@@ -32,6 +33,7 @@ export function createApp() {
       status: 'ok',
       fcm: isFcmEnabled(),
       finnhub: isFinnhubConfigured(),
+      streaming: env.STREAMING_ENABLED,
     });
   });
 

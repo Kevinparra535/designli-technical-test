@@ -1,12 +1,15 @@
 // src/server.ts
 //
-// Process entry point: run migrations, start the HTTP server, and launch the
-// alert worker. Handles graceful shutdown.
+// Process entry point: run migrations, start the HTTP server, and start the
+// real-time price hub (or the polling alert worker as a fallback). Handles
+// graceful shutdown.
 
 import { createApp } from './app';
 import { pool } from './config/db';
 import { env } from './config/env';
 import { migrate } from './db/migrate';
+import { priceHub } from './modules/prices/priceHub';
+import { attachPriceGateway } from './modules/prices/prices.gateway';
 import { startAlertWorker, stopAlertWorker } from './worker/alertWorker';
 
 async function main() {
@@ -18,11 +21,20 @@ async function main() {
     console.log(`[server] listening on http://0.0.0.0:${env.PORT}`);
   });
 
-  startAlertWorker();
+  if (env.STREAMING_ENABLED) {
+    // Real-time hub: 1 upstream WS to Finnhub, fanned out to clients, alerts
+    // evaluated inline. Supersedes the polling worker.
+    await priceHub.start();
+    attachPriceGateway(server);
+  } else {
+    // Fallback: evaluate alerts by polling Finnhub REST quotes.
+    startAlertWorker();
+  }
 
   const shutdown = (signal: string) => {
     console.log(`[server] ${signal} received, shutting down…`);
-    stopAlertWorker();
+    if (env.STREAMING_ENABLED) priceHub.stop();
+    else stopAlertWorker();
     server.close(() => {
       void pool.end().finally(() => process.exit(0));
     });

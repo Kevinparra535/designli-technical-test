@@ -1,0 +1,267 @@
+{
+  "info": {
+    "_postman_id": "b1a7e9c2-3d4f-4a6b-9c8d-stocks-backend01",
+    "name": "Stocks Backend",
+    "description": "Colección completa del backend (Node + Express + PostgreSQL + JWT + FCM + price hub).\n\n- `{{baseUrl}}` por defecto `http://localhost:3000`.\n- **Auth** guarda el JWT en `{{token}}` automáticamente (test script en Register/Login).\n- **Create alert** guarda el id en `{{webhookId}}` automáticamente.\n- El endpoint en tiempo real es un **WebSocket**: `{{wsUrl}}` (`ws://localhost:3000/ws`). Ver la carpeta _Real-time (WebSocket)_.\n\nOrden sugerido: Register → Login → Register device → Create alert → (Test push / List / Get / Delete).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "wsUrl", "value": "ws://localhost:3000/ws", "type": "string" },
+    { "key": "userEmail", "value": "me@test.com", "type": "string" },
+    { "key": "userPassword", "value": "secret1", "type": "string" },
+    { "key": "fcmToken", "value": "test-fcm-token-123", "type": "string" },
+    { "key": "symbol", "value": "AAPL", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "webhookId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Estado del servicio y de las integraciones: `{ status, fcm, finnhub, streaming }`."
+      },
+      "response": []
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Crea un usuario y devuelve `{ token, user }`. Guarda el token en `{{token}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Inicia sesión y devuelve `{ token, user }`. Guarda el token en `{{token}}`."
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Devuelve el usuario del Bearer token. Requiere `{{token}}` (heredado de la colección)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Devices",
+      "item": [
+        {
+          "name": "Register device (FCM token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{fcmToken}}\",\n  \"platform\": \"android\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"]
+            },
+            "description": "Registra (upsert) el token FCM del dispositivo. Auth opcional: si mandas el Bearer, ata el device al usuario.\n\nRespuesta: `{ id, token, platform, active, createdAt }`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks (Alerts)",
+      "item": [
+        {
+          "name": "Create alert",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.id) {",
+                  "  pm.collectionVariables.set('webhookId', json.id);",
+                  "  console.log('webhookId saved:', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"stock-price-alert:{{symbol}}:above:150\",\n  \"url\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            },
+            "description": "Crea una alerta de precio. El `event` se codifica como `stock-price-alert:<SYMBOL>:<above|below>:<targetPrice>`.\n\nGuarda el id en `{{webhookId}}`. Respuesta: `{ id, url, event, active, createdAt }`."
+          },
+          "response": []
+        },
+        {
+          "name": "List alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks"]
+            },
+            "description": "Lista las alertas (las del usuario autenticado + anónimas)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get alert by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/{{webhookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "{{webhookId}}"]
+            },
+            "description": "Devuelve una alerta por id. Usa `{{webhookId}}` (lo setea Create alert)."
+          },
+          "response": []
+        },
+        {
+          "name": "Test push",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/{{webhookId}}/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "{{webhookId}}", "test"]
+            },
+            "description": "Dispara un push de prueba (sin esperar al mercado) a todos los devices activos. Requiere FCM configurado para que llegue de verdad."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete alert",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/{{webhookId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", "{{webhookId}}"]
+            },
+            "description": "Elimina una alerta por id (204). También la quita del hub en tiempo real."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Real-time (WebSocket)",
+      "item": [
+        {
+          "name": "Stream prices  (ws://.../ws)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{wsUrl}}",
+              "protocol": "ws",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["ws"]
+            },
+            "description": "Endpoint de precios en tiempo real (WebSocket).\n\nEn Postman: New → WebSocket Request → URL `{{wsUrl}}` (`ws://localhost:3000/ws`) → Connect.\n\nMensajes a enviar (cliente → servidor):\n\n```\n{ \"type\": \"subscribe\", \"symbols\": [\"AAPL\", \"BINANCE:BTCUSDT\"] }\n{ \"type\": \"unsubscribe\", \"symbols\": [\"AAPL\"] }\n{ \"type\": \"ping\" }\n```\n\nMensajes que recibes (servidor → cliente): `welcome`, `snapshot`, `prices`, `pong`.\n\nNota: necesitas `FINNHUB_API_KEY` para ticks reales. `BINANCE:BTCUSDT` transmite 24/7 (útil fuera de horario de mercado)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

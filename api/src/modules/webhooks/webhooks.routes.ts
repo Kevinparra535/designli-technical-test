@@ -16,6 +16,8 @@ import { asyncHandler } from '../../middleware/asyncHandler';
 import { optionalAuth } from '../../middleware/auth';
 import { validatorHandler } from '../../middleware/validatorHandler';
 import { decodeAlertEvent } from '../../services/alerts';
+import { priceHub } from '../prices/priceHub';
+
 import { fireTestAlert } from './webhooks.notifier';
 import * as repo from './webhooks.repository';
 
@@ -54,6 +56,8 @@ webhooksRouter.post(
       );
     }
     const row = await repo.create(url, event, req.user?.sub ?? null);
+    // Watch this alert's symbol in the real-time hub straight away.
+    priceHub.registerAlert(row);
     res.status(201).json(toJson(row));
   }),
 );
@@ -82,6 +86,7 @@ webhooksRouter.delete(
   asyncHandler(async (req, res) => {
     const ok = await repo.remove(req.params.id!);
     if (!ok) throw HttpError.notFound('Webhook not found');
+    priceHub.removeAlert(req.params.id!);
     res.status(204).end();
   }),
 );

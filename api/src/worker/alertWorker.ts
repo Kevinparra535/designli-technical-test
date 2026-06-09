@@ -5,14 +5,14 @@
 // been crossed it pushes via FCM and deactivates the alert (so it fires once).
 
 import { env } from '../config/env';
-import {
-  decodeAlertEvent,
-  isCrossed,
-  type DecodedAlert,
-} from '../services/alerts';
-import { getQuote, isFinnhubConfigured } from '../services/finnhub';
 import { notifyDevices } from '../modules/webhooks/webhooks.notifier';
 import * as webhooks from '../modules/webhooks/webhooks.repository';
+import {
+  decodeAlertEvent,
+  type DecodedAlert,
+  isCrossed,
+} from '../services/alerts';
+import { getQuote, isFinnhubConfigured } from '../services/finnhub';
 
 let timer: NodeJS.Timeout | null = null;
 let running = false;

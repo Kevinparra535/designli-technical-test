@@ -5,11 +5,11 @@
 // rest of the API works — FCM sends just become no-ops with a warning. This lets
 // you develop the alert flow before wiring real Firebase credentials.
 
+import admin from 'firebase-admin';
 import { readFileSync } from 'node:fs';
 
-import admin from 'firebase-admin';
-
 import { env } from '../config/env';
+
 import type { AlertCondition } from './alerts';
 
 let app: admin.app.App | null = null;

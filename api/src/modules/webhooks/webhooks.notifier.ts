@@ -4,9 +4,10 @@
 // device. Used by both the background worker (real crossings) and the
 // POST /webhooks/:id/test endpoint (manual trigger).
 
-import * as devices from '../devices/devices.repository';
 import { decodeAlertEvent } from '../../services/alerts';
 import { sendPriceAlert } from '../../services/fcm';
+import * as devices from '../devices/devices.repository';
+
 import type { WebhookRow } from './webhooks.repository';
 
 export interface NotifyResult {

@@ -7,3 +7,4 @@ dist
 # Never commit Firebase credentials
 serviceAccount.json
 *-service-account.json
+postgres_data/

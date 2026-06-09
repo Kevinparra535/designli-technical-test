@@ -8,7 +8,7 @@ its own:
 | --- | --- |
 | 1. Users can log in | `POST /auth/register`, `POST /auth/login` (JWT) |
 | 2. Create a stock price alert | `POST /webhooks` (alert encoded in `event`) |
-| 3. List of stocks / 4. Graph | Served by Finnhub directly from the app |
+| 3. List of stocks / 4. Graph | Real-time prices via the `/ws` price hub (or Finnhub from the app) |
 | 5. **FCM push when price crosses the alert** | Alert worker + `firebase-admin` |
 | Extra: Docker | `docker-compose.yml` (Postgres para desarrollo, estilo guía) |
 
@@ -27,17 +27,24 @@ App                          Backend (this)                 Finnhub / Firebase
  │  POST /devices {token}     │                              │
  │ ──────────────────────────▶│  upsert FCM token            │
  │  POST /webhooks {event}    │                              │
- │ ──────────────────────────▶│  store alert                 │
- │                            │  every POLL_INTERVAL_MS:      │
- │                            │   GET /quote?symbol  ────────▶│ (price)
- │                            │   price crossed target?       │
+ │ ──────────────────────────▶│  store alert + watch symbol  │
+ │  WS  /ws  subscribe[AAPL]  │   1 upstream WS               │
+ │ ◀══════════════════════════│◀═════════════════════════════│ trade ticks
+ │ ◀═ {type:"prices",data} ═══│  coalesce + fan-out          │
+ │                            │  tick crosses alert?          │
  │                            │   firebase-admin send ───────▶│ FCM
  │  ◀───────── push (data payload) ◀────────────────────────-┤
 ```
 
-The alert worker (`src/worker/alertWorker.ts`) polls a live quote per distinct
-symbol, and for any active alert whose threshold is crossed it pushes to every
-registered device, then **deactivates the alert** so it fires only once.
+**Real-time price hub (default).** A single upstream WebSocket to Finnhub is
+de-duplicated across all clients and fanned out to app clients over `/ws`. Alerts
+are evaluated **inline on every tick** (no polling); when one crosses, it pushes
+to every registered device and **deactivates the alert** so it fires once. See
+[Real-time price hub](#real-time-price-hub) below.
+
+**Polling fallback.** With `STREAMING_ENABLED=false`, the alert worker
+(`src/worker/alertWorker.ts`) instead polls a quote per symbol every
+`POLL_INTERVAL_MS` and fires the same way.
 
 ---
 
@@ -54,10 +61,13 @@ src/
     auth/      register / login / me  (bcrypt + JWT)
     devices/   POST /devices  (upsert FCM token)
     webhooks/  CRUD + /test for stock alerts, plus the FCM fan-out notifier
-  services/    alerts (event encode/decode), finnhub client, fcm sender
-  worker/      alertWorker (the polling loop)
+    prices/    priceHub (app logic: refs, cache, throttle, alert eval) +
+               prices.gateway (WS transport adapter for app clients)
+  services/    alerts (event encode/decode), finnhub REST client,
+               finnhubSocket (upstream WS infra), fcm sender
+  worker/      alertWorker (polling fallback when streaming is off)
   app.ts       Express wiring
-  server.ts    bootstrap: migrate → listen → start worker
+  server.ts    bootstrap: migrate → listen → hub + gateway (or worker)
 ```
 
 ---
@@ -83,13 +93,62 @@ Error responses use Boom's payload shape:
 
 ---
 
+## Real-time price hub
+
+A single upstream WebSocket to Finnhub is fanned out to every app client — the
+most performant design (one upstream connection regardless of client count, push
+instead of poll). Built in three layers, matching the backend's structure:
+
+| Layer | File | Responsibility |
+| --- | --- | --- |
+| **Infra** | `services/finnhubSocket.ts` | one upstream WS to `wss://ws.finnhub.io`; subscribe/unsubscribe; reconnect with backoff; emits trade ticks |
+| **Application** | `modules/prices/priceHub.ts` | symbol ref-counting, last-price cache, tick coalescing, fan-out, **inline alert evaluation** |
+| **Transport** | `modules/prices/prices.gateway.ts` | `ws` server on `WS_PATH`; adapts each socket to the hub's transport-agnostic `StreamClient` |
+
+Performance properties:
+
+- **De-duplication**: the hub ref-counts symbols (clients **and** alerts); the
+  upstream socket subscribes only on 0→1 and unsubscribes on 1→0.
+- **Coalescing**: ticks are buffered and flushed at most every `PRICE_THROTTLE_MS`
+  (default 400 ms) — protects React Native from re-render storms.
+- **Snapshot**: a new subscriber immediately gets the last known price from the
+  in-memory cache (no upstream round-trip).
+- **Inline alerts**: each tick evaluates alerts on that symbol → instant FCM,
+  then the alert is deactivated. The polling worker is **not** started.
+
+### WebSocket protocol (`/ws`)
+
+Client → server:
+
+```json
+{ "type": "subscribe",   "symbols": ["AAPL", "MSFT"] }
+{ "type": "unsubscribe", "symbols": ["AAPL"] }
+{ "type": "ping" }
+```
+
+Server → client:
+
+```json
+{ "type": "welcome",  "path": "/ws" }
+{ "type": "snapshot", "data": [{ "symbol": "AAPL", "price": 152.3, "t": 1718000000000 }] }
+{ "type": "prices",   "data": [{ "symbol": "AAPL", "price": 152.4, "t": 1718000000400 }] }
+{ "type": "pong" }
+```
+
+> Needs a real `FINNHUB_API_KEY` to receive live ticks (the free tier streams US
+> stocks during market hours). Without a key the hub still runs; `/ws` accepts
+> clients but no ticks flow.
+
+---
+
 ## API
 
 All bodies are JSON. Auth endpoints return `{ token, user }`.
 
 | Method | Path | Auth | Body / Notes |
 | --- | --- | --- | --- |
-| `GET` | `/health` | — | `{ status, fcm, finnhub }` integration status |
+| `GET` | `/health` | — | `{ status, fcm, finnhub, streaming }` integration status |
+| `WS` | `/ws` | — | real-time prices (subscribe/unsubscribe). See [hub](#real-time-price-hub) |
 | `POST` | `/auth/register` | — | `{ email, password }` → `201 { token, user }` |
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` |
 | `GET` | `/auth/me` | Bearer | `{ user }` |
@@ -153,10 +212,14 @@ See `.env.example`. Key vars:
 | --- | --- |
 | `PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE` or `DATABASE_URL` | Postgres connection |
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | token signing (**change the secret**) |
-| `FINNHUB_API_KEY` | server-side Finnhub key for the worker |
+| `FINNHUB_API_KEY` | server-side Finnhub key (REST + real-time WS) |
+| `FINNHUB_WS_URL` | upstream stream URL (default `wss://ws.finnhub.io`) |
 | `GOOGLE_APPLICATION_CREDENTIALS` **or** `FIREBASE_SERVICE_ACCOUNT` | Firebase service account (path vs inline JSON) |
-| `POLL_INTERVAL_MS` | worker polling cadence (default 15000) |
-| `ALERT_WORKER_ENABLED` | set `false` to run the API without the worker |
+| `STREAMING_ENABLED` | `true` (default) = real-time hub; `false` = polling worker |
+| `WS_PATH` | client WebSocket path (default `/ws`) |
+| `PRICE_THROTTLE_MS` | fan-out coalescing window (default 400) |
+| `POLL_INTERVAL_MS` | worker polling cadence when streaming is off (default 15000) |
+| `ALERT_WORKER_ENABLED` | with streaming off, set `false` to disable the worker too |
 
 The backend **boots without** Finnhub/Firebase configured — those features
 degrade gracefully (worker skips, FCM sends become no-ops with a warning) so you
@@ -181,11 +244,24 @@ EXPO_PUBLIC_BACKEND_BASE_URL=http://<your-lan-ip>:3000   # /devices
 EXPO_PUBLIC_WEBHOOK_BASE_URL=http://<your-lan-ip>:3000   # /webhooks (alerts)
 ```
 
+For live prices, the app opens a WebSocket to `ws://<your-lan-ip>:3000/ws` and
+sends `{ "type": "subscribe", "symbols": [...] }` (see
+[Real-time price hub](#real-time-price-hub)).
+
 Use your machine's **LAN IP**, not `localhost`, so a physical device can reach
 it. FCM only works on an **EAS build** (not Expo Go):
 `eas build -p android --profile preview`.
 
 ---
+
+## Postman
+
+Importa [`postman/stocks-backend.postman_collection.json`](postman/stocks-backend.postman_collection.json)
+(Postman → Import). Trae todos los endpoints con variables de colección
+(`baseUrl`, `token`, `webhookId`, …). **Register** / **Login** guardan el JWT en
+`{{token}}` automáticamente y **Create alert** guarda el id en `{{webhookId}}`, así
+que el orden Register → Login → Create alert → Get/Test/Delete funciona sin copiar
+nada a mano. El stream en vivo está en la carpeta _Real-time (WebSocket)_.
 
 ## Try the flow with curl
 
@@ -205,3 +281,13 @@ curl -s localhost:3000/webhooks -H 'content-type: application/json' \
 # 4. force a test push without waiting for the market
 curl -s -X POST localhost:3000/webhooks/<id>/test
 ```
+
+Subscribe to the real-time stream (needs `FINNHUB_API_KEY`):
+
+```bash
+node -e "const W=require('ws');const ws=new W('ws://localhost:3000/ws');\
+ws.on('open',()=>ws.send(JSON.stringify({type:'subscribe',symbols:['AAPL','BINANCE:BTCUSDT']})));\
+ws.on('message',m=>console.log(m.toString()));"
+```
+
+> `BINANCE:BTCUSDT` is handy for testing outside US market hours (crypto streams 24/7).

@@ -45,7 +45,17 @@ export const env = {
 
   // Finnhub (server-side key — separate from the app's EXPO_PUBLIC_ key).
   FINNHUB_BASE_URL: optional('FINNHUB_BASE_URL', 'https://finnhub.io/api/v1'),
+  FINNHUB_WS_URL: optional('FINNHUB_WS_URL', 'wss://ws.finnhub.io'),
   FINNHUB_API_KEY: optional('FINNHUB_API_KEY'),
+
+  // Real-time price hub. When enabled, a single upstream WebSocket to Finnhub is
+  // fanned out to app clients (path WS_PATH) and used to evaluate alerts inline —
+  // the polling worker is then NOT started. Disable to fall back to polling.
+  STREAMING_ENABLED: optional('STREAMING_ENABLED', 'true') !== 'false',
+  WS_PATH: optional('WS_PATH', '/ws'),
+  // Coalescing window: ticks are buffered and flushed to clients at most this
+  // often per symbol (protects mobile clients from re-render storms).
+  PRICE_THROTTLE_MS: number('PRICE_THROTTLE_MS', 400),
 
   // Firebase Cloud Messaging service account. Provide ONE of:
   //  - GOOGLE_APPLICATION_CREDENTIALS: path to the serviceAccount.json file, or

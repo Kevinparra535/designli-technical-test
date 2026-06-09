@@ -21,7 +21,7 @@ export const pool = new Pool(
 
 export function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
-  params?: ReadonlyArray<unknown>,
+  params?: readonly unknown[],
 ) {
   return pool.query<T>(text, params as unknown[] | undefined);
 }
