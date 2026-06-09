@@ -10,7 +10,8 @@
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:13
+    container_name: db
     environment:
       POSTGRES_DB: ${PGDATABASE:-stocks}
       POSTGRES_USER: ${PGUSER:-postgres}
@@ -21,9 +22,19 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
 
   pgadmin:
-    image: dpage/pgadmin4
+    # Tu Docker ejecuta binarios ARM64 (amd64 da "exec format error"), pero el
+    # daemon se reporta como amd64 y por defecto baja amd64 → hay que forzar
+    # arm64 explícitamente para que baje la variante que sí corre.
+    image: dpage/pgadmin4:8.14
+    platform: linux/arm64
+    # Root evita errores de permisos sobre /var/lib/pgadmin en Windows/WSL2.
+    user: root
+    depends_on:
+      - postgres
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@mail.com
       - PGADMIN_DEFAULT_PASSWORD=root
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
     ports:
       - 5050:80
