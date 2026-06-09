@@ -80,6 +80,8 @@ import type { StockService } from '@/domain/services/StockService';
 
 import { CheckActiveSessionUseCase } from '@/domain/useCases/CheckActiveSessionUseCase';
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
+import { DeleteStockAlertUseCase } from '@/domain/useCases/DeleteStockAlertUseCase';
+import { GetStockAlertsUseCase } from '@/domain/useCases/GetStockAlertsUseCase';
 import { GetStockDetailUseCase } from '@/domain/useCases/GetStockDetailUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 import { LoginUseCase } from '@/domain/useCases/LoginUseCase';
@@ -87,6 +89,7 @@ import { LogoutUseCase } from '@/domain/useCases/LogoutUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
 
+import { AlertsListViewModel } from '@/ui/screens/AlertsList/AlertsListViewModel';
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
@@ -207,6 +210,14 @@ container
   .to(CreateStockAlertUseCase);
 
 container
+  .bind<GetStockAlertsUseCase>(TYPES.GetStockAlertsUseCase)
+  .to(GetStockAlertsUseCase);
+
+container
+  .bind<DeleteStockAlertUseCase>(TYPES.DeleteStockAlertUseCase)
+  .to(DeleteStockAlertUseCase);
+
+container
   .bind<RegisterPushNotificationsUseCase>(
     TYPES.RegisterPushNotificationsUseCase,
   )
@@ -227,6 +238,9 @@ container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);
 container
   .bind<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel)
   .to(CreateStockAlertViewModel);
+container
+  .bind<AlertsListViewModel>(TYPES.AlertsListViewModel)
+  .to(AlertsListViewModel);
 container
   .bind<StockDetailViewModel>(TYPES.StockDetailViewModel)
   .to(StockDetailViewModel);

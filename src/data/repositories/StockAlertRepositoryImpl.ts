@@ -22,4 +22,12 @@ export class StockAlertRepositoryImpl implements StockAlertRepository {
   createAlert(alert: StockAlert): Promise<StockAlert> {
     return this.service.createAlert(alert);
   }
+
+  getAlerts(): Promise<StockAlert[]> {
+    return this.service.getAlerts();
+  }
+
+  deleteAlert(id: string): Promise<void> {
+    return this.service.deleteAlert(id);
+  }
 }

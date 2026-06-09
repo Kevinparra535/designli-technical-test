@@ -7,4 +7,6 @@ import { StockAlert } from '@/domain/entities/StockAlert';
 
 export interface StockAlertService {
   createAlert(alert: StockAlert): Promise<StockAlert>;
+  getAlerts(): Promise<StockAlert[]>;
+  deleteAlert(id: string): Promise<void>;
 }

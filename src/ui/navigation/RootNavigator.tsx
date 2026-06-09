@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { observer } from 'mobx-react-lite';
@@ -7,20 +9,51 @@ import { observer } from 'mobx-react-lite';
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
+import { AlertsListScreen } from '@/ui/screens/AlertsList/AlertsListScreen';
 import { CreateStockAlertScreen } from '@/ui/screens/CreateStockAlert/CreateStockAlertScreen';
 import { HomeScreen } from '@/ui/screens/Home/HomeScreen';
 import { LoginScreen } from '@/ui/screens/Login/LoginScreen';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
 
+export type AppTabParamList = {
+  Home: undefined;
+  Alerts: undefined;
+};
+
 export type RootStackParamList = {
   Login: undefined;
-  Home: undefined;
+  Main: NavigatorScreenParams<AppTabParamList> | undefined;
   StockDetail: { symbol: string };
   CreateStockAlert: { symbol?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<AppTabParamList>();
+
+const tabIcon = (glyph: string) => {
+  const TabIcon = ({ color }: { color: string }) => (
+    <Text style={{ fontSize: 18, color }}>{glyph}</Text>
+  );
+  return TabIcon;
+};
+
+const AppTabs = () => (
+  <Tab.Navigator
+    screenOptions={{ headerShown: true, tabBarActiveTintColor: '#2563EB' }}
+  >
+    <Tab.Screen
+      name="Home"
+      component={HomeScreen}
+      options={{ title: 'Home', tabBarIcon: tabIcon('🏠') }}
+    />
+    <Tab.Screen
+      name="Alerts"
+      component={AlertsListScreen}
+      options={{ title: 'Alerts', tabBarIcon: tabIcon('🔔') }}
+    />
+  </Tab.Navigator>
+);
 
 export const RootNavigator = observer(() => {
   const session = useMemo(
@@ -47,9 +80,9 @@ export const RootNavigator = observer(() => {
         {session.isAuthenticated ? (
           <>
             <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{ title: 'Home', headerBackVisible: false }}
+              name="Main"
+              component={AppTabs}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="StockDetail"
@@ -59,7 +92,11 @@ export const RootNavigator = observer(() => {
             <Stack.Screen
               name="CreateStockAlert"
               component={CreateStockAlertScreen}
-              options={{ title: 'New alert' }}
+              options={{
+                title: 'New alert',
+                presentation: 'formSheet',
+                sheetAllowedDetents: 'fitToContents',
+              }}
             />
           </>
         ) : (

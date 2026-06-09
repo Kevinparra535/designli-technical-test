@@ -15,7 +15,10 @@ import type { StockAlertService } from '@/domain/services/StockAlertService';
 
 import { WebhookManager } from '@/data/network/webhookManager';
 
-import { StockAlertModel } from '@/data/models/StockAlertModel';
+import {
+  STOCK_ALERT_EVENT_PREFIX,
+  StockAlertModel,
+} from '@/data/models/StockAlertModel';
 
 @injectable()
 export class StockAlertServiceImpl implements StockAlertService {
@@ -33,5 +36,19 @@ export class StockAlertServiceImpl implements StockAlertService {
     const callbackUrl = `${config.WEBHOOK_BASE_URL}/notifications`;
     const registration = await this.service.registerWebhook(callbackUrl, event);
     return StockAlertModel.fromJson(registration).toDomain();
+  }
+
+  async getAlerts(): Promise<StockAlert[]> {
+    const registrations = await this.service.listWebhooks();
+    return registrations
+      // The backend stores all webhooks together; keep only stock price alerts.
+      .filter((reg) => reg.event.startsWith(`${STOCK_ALERT_EVENT_PREFIX}:`))
+      .map((reg) => StockAlertModel.fromJson(reg).toDomain())
+      // Newest first.
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  }
+
+  deleteAlert(id: string): Promise<void> {
+    return this.service.deleteWebhook(id);
   }
 }

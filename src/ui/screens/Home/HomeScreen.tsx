@@ -1,19 +1,27 @@
 import { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { CompositeNavigationProp } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
-import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
+import type {
+  AppTabParamList,
+  RootStackParamList,
+} from '@/ui/navigation/RootNavigator';
 
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 
 import { HomeViewModel } from './HomeViewModel';
 
-type HomeNavigation = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type HomeNavigation = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, 'Home'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 export const HomeScreen = observer(() => {
   const vm = useMemo(
