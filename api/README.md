@@ -16,6 +16,9 @@ Stack: **Express + TypeScript + PostgreSQL + JWT (bcrypt/jsonwebtoken) +
 firebase-admin + Finnhub**, following the Notion "Node JS" course stack
 (Express · PostgreSQL · Passport/JWT).
 
+> 📄 **Resumen técnico de 2 minutos** (ideal para revisar el diseño):
+> [`ARCHITECTURE.md`](./ARCHITECTURE.md). Este README es la referencia completa.
+
 ---
 
 ## How it works
