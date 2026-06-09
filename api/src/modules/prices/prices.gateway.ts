@@ -42,10 +42,34 @@ function asThrottle(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+// Heartbeat: ping clients periodically and drop dead ones. Required on hosts
+// like Heroku that close idle WebSocket connections after ~55s.
+const HEARTBEAT_MS = 30000;
+
 export function attachPriceGateway(server: Server): WebSocketServer {
   const wss = new WebSocketServer({ server, path: env.WS_PATH });
 
+  const alive = new WeakMap<WebSocket, { ok: boolean }>();
+  const heartbeat = setInterval(() => {
+    for (const ws of wss.clients) {
+      const state = alive.get(ws);
+      if (state && !state.ok) {
+        ws.terminate(); // missed the previous ping → connection is dead
+        continue;
+      }
+      if (state) state.ok = false;
+      ws.ping();
+    }
+  }, HEARTBEAT_MS);
+  wss.on('close', () => clearInterval(heartbeat));
+
   wss.on('connection', (ws: WebSocket) => {
+    alive.set(ws, { ok: true });
+    ws.on('pong', () => {
+      const state = alive.get(ws);
+      if (state) state.ok = true;
+    });
+
     // Adapt the raw socket into the hub's StreamClient.
     const client: StreamClient = {
       subscriptions: new Set<string>(),

@@ -1,0 +1,9 @@
+# Heroku container build: Heroku construye la imagen desde el Dockerfile EN SU
+# nube (no necesitas Docker local). Requiere que la app use el stack "container".
+#
+# El proceso "web" corre el CMD del Dockerfile (node dist/server.js), que:
+#   - aplica migraciones al boot (server.ts → migrate())
+#   - escucha en $PORT (Heroku lo inyecta; env.ts lo lee)
+build:
+  docker:
+    web: Dockerfile

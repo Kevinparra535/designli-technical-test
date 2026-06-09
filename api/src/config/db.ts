@@ -7,9 +7,17 @@ import { Pool, type QueryResultRow } from 'pg';
 
 import { env } from './env';
 
+// Heroku (and most managed Postgres) require SSL with a self-signed cert.
+// Enable it when DATABASE_URL points at a remote host; keep it off for local.
+const isLocal = /localhost|127\.0\.0\.1/.test(env.DATABASE_URL);
+const useSsl = Boolean(env.DATABASE_URL) && !isLocal;
+
 export const pool = new Pool(
   env.DATABASE_URL
-    ? { connectionString: env.DATABASE_URL }
+    ? {
+        connectionString: env.DATABASE_URL,
+        ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+      }
     : {
         host: env.PGHOST,
         port: env.PGPORT,
