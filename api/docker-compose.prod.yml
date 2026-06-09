@@ -1,0 +1,49 @@
+# Deployment compose: the backend (built from the Dockerfile) + PostgreSQL.
+# (docker-compose.yml is the dev-only DB; this one runs the whole stack.)
+#
+#   docker compose -f docker-compose.prod.yml up --build -d
+#   docker compose -f docker-compose.prod.yml logs -f api
+#   docker compose -f docker-compose.prod.yml down
+#
+# Secrets are read from api/.env (FINNHUB_API_KEY, JWT_SECRET, FCM credentials).
+
+services:
+  postgres:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PGDATABASE:-stocks}
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Override .env's PGHOST=localhost so the API reaches the postgres service.
+      PGHOST: postgres
+      PGPORT: 5432
+    ports:
+      - '3000:3000'
+    # For FCM in a container, set FIREBASE_SERVICE_ACCOUNT (inline JSON) in .env,
+    # OR mount the key file and point GOOGLE_APPLICATION_CREDENTIALS at it:
+    # volumes:
+    #   - ./serviceAccount.json:/app/serviceAccount.json:ro
+    # (then set GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccount.json in .env)
+
+volumes:
+  postgres_data:

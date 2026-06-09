@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.env.*
+*.log
+postgres_data
+serviceAccount.json
+*-service-account.json
+.git
+.gitignore
+Dockerfile
+docker-compose*.yml
