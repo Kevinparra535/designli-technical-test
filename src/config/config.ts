@@ -34,4 +34,9 @@ export const config = {
     WEBHOOKS: '/webhooks',
     DEVICES: '/devices',
   },
+
+  TEST_USER: {
+    email: 'appcheck@test.com',
+    password: 'password123', // only for testing!
+  },
 };
