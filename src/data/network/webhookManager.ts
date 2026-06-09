@@ -8,6 +8,8 @@ import { HttpManager } from '@/data/network/axiosManager';
 
 import Logger from '@/ui/utils/Logger';
 
+import type { AuthTokenStore } from '@/data/storage/authTokenStore';
+
 export interface WebhookRegistration {
   id: string;
   url: string;
@@ -30,7 +32,11 @@ export class WebhookManagerImpl implements WebhookManager {
   private readonly apiKey = config.WEBHOOK_API_KEY;
   private readonly logger = new Logger('WebhookManager');
 
-  constructor(@inject(TYPES.HttpManager) private readonly http: HttpManager) {}
+  constructor(
+    @inject(TYPES.HttpManager) private readonly http: HttpManager,
+    @inject(TYPES.AuthTokenStore)
+    private readonly authTokenStore: AuthTokenStore,
+  ) {}
 
   private buildUrl(
     path: string,
@@ -40,6 +46,15 @@ export class WebhookManagerImpl implements WebhookManager {
       const error = new Error(
         'Webhook base URL is not configured. Set WEBHOOK_BASE_URL in environment variables.',
       );
+      this.logger.error(error.message);
+      throw error;
+    }
+
+    // Alerts are a protected resource — require an authenticated session.
+    // (The HttpManager interceptor attaches the Bearer token; this is the
+    // fail-fast guard so we never fire an anonymous alert request.)
+    if (!this.authTokenStore.getToken()) {
+      const error = new Error('You must be signed in to manage alerts.');
       this.logger.error(error.message);
       throw error;
     }
