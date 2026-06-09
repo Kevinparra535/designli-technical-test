@@ -2,8 +2,16 @@
 //
 // Infra adapter over the Finnhub realtime websocket (wss://ws.finnhub.io).
 // Manages a single shared connection, symbol subscriptions, fan-out of `trade`
-// messages to listeners, and auto-reconnect with backoff. Returns raw DTOs —
-// mapping to the domain is the RealtimePriceService's job.
+// messages to listeners, and resilient reconnect.
+//
+// Reconnect strategy (the free tier periodically ends the stream with code 1001,
+// and rate-limits aggressive reconnects with HTTP 429):
+//   - exponential backoff, base 3s, capped at 30s — never a tight loop;
+//   - a 429 close forces at least a 30s cooldown;
+//   - the backoff resets ONLY after the connection stays healthy for 20s, so a
+//     flapping connection keeps backing off instead of hammering the server;
+//   - retries indefinitely (until disconnect / no subscriptions) so the feed
+//     self-heals once the free-tier window reopens.
 
 import { injectable } from 'inversify';
 
@@ -26,7 +34,10 @@ export interface FinnhubSocketManager {
   onTrade(listener: (trades: FinnhubTradeDto[]) => void): () => void;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 5;
+const BASE_RECONNECT_DELAY = 3000;
+const MAX_RECONNECT_DELAY = 30000;
+const RATE_LIMIT_COOLDOWN = 30000;
+const HEALTHY_AFTER = 20000;
 
 @injectable()
 export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
@@ -34,6 +45,7 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
   private intentionalClose = false;
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private healthyTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly listeners = new Set<(trades: FinnhubTradeDto[]) => void>();
   private readonly subscriptions = new Set<string>();
@@ -56,7 +68,13 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
 
     socket.onopen = () => {
       this.logger.info('Realtime socket connected');
-      this.reconnectAttempts = 0;
+      // Reset the backoff ONLY once the connection proves stable — otherwise a
+      // connection that opens then immediately closes would loop at the base
+      // delay forever (and trip the 429 rate limit).
+      this.clearHealthyTimer();
+      this.healthyTimer = setTimeout(() => {
+        this.reconnectAttempts = 0;
+      }, HEALTHY_AFTER);
       // (Re)subscribe everything requested while disconnected.
       this.subscriptions.forEach((symbol) => this.send('subscribe', symbol));
     };
@@ -90,12 +108,14 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
         }")`,
       );
       this.socket = null;
-      this.scheduleReconnect();
+      this.clearHealthyTimer();
+      this.scheduleReconnect(event.reason);
     };
   }
 
   disconnect(): void {
     this.intentionalClose = true;
+    this.clearHealthyTimer();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -122,22 +142,35 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
     };
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(reason?: string): void {
     if (this.intentionalClose) return;
+    // Nothing to listen for — don't keep a connection alive pointlessly.
     if (this.subscriptions.size === 0) return;
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      this.logger.warn(
-        'Realtime socket: max reconnect attempts reached, giving up.',
-      );
-      return;
-    }
 
     this.reconnectAttempts += 1;
-    const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 15000);
-    this.logger.info(
-      `Reconnecting socket in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`,
+    const rateLimited = !!reason && reason.includes('429');
+    const backoff = Math.min(
+      BASE_RECONNECT_DELAY * 2 ** (this.reconnectAttempts - 1),
+      MAX_RECONNECT_DELAY,
     );
+    const delay = rateLimited
+      ? Math.max(backoff, RATE_LIMIT_COOLDOWN)
+      : backoff;
+
+    this.logger.info(
+      `Reconnecting socket in ${delay}ms (attempt ${this.reconnectAttempts}${
+        rateLimited ? ', rate-limited' : ''
+      })`,
+    );
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = setTimeout(() => this.connect(), delay);
+  }
+
+  private clearHealthyTimer(): void {
+    if (this.healthyTimer) {
+      clearTimeout(this.healthyTimer);
+      this.healthyTimer = null;
+    }
   }
 
   private send(type: 'subscribe' | 'unsubscribe', symbol: string): void {
