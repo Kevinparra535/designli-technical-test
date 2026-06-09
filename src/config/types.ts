@@ -22,18 +22,24 @@ export const TYPES = {
   PushNotificationManager: Symbol.for('PushNotificationManager'),
   NotificationApiManager: Symbol.for('NotificationApiManager'),
   FinnhubSocketManager: Symbol.for('FinnhubSocketManager'),
+  AuthApiManager: Symbol.for('AuthApiManager'),
+
+  // data — storage
+  AuthTokenStore: Symbol.for('AuthTokenStore'),
 
   // domain — services (contracts; impl in data, wraps a manager + maps to domain)
   StockService: Symbol.for('StockService'),
   StockAlertService: Symbol.for('StockAlertService'),
   NotificationService: Symbol.for('NotificationService'),
   RealtimePriceService: Symbol.for('RealtimePriceService'),
+  AuthService: Symbol.for('AuthService'),
 
   // domain — repositories (contracts; impl in data, delegates to a service)
   StockRepository: Symbol.for('StockRepository'),
   StockAlertRepository: Symbol.for('StockAlertRepository'),
   NotificationRepository: Symbol.for('NotificationRepository'),
   RealtimePriceRepository: Symbol.for('RealtimePriceRepository'),
+  SessionRepository: Symbol.for('SessionRepository'),
 
   // domain — useCases
   GetStockListUseCase: Symbol.for('GetStockListUseCase'),
@@ -42,8 +48,12 @@ export const TYPES = {
     'RegisterPushNotificationsUseCase',
   ),
   SubscribeToPricesUseCase: Symbol.for('SubscribeToPricesUseCase'),
+  LoginUseCase: Symbol.for('LoginUseCase'),
+  CheckActiveSessionUseCase: Symbol.for('CheckActiveSessionUseCase'),
+  LogoutUseCase: Symbol.for('LogoutUseCase'),
 
   // ui — viewModels
   HomeViewModel: Symbol.for('HomeViewModel'),
   CreateStockAlertViewModel: Symbol.for('CreateStockAlertViewModel'),
+  SessionViewModel: Symbol.for('SessionViewModel'),
 } as const;

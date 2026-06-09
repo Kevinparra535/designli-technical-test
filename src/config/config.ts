@@ -24,6 +24,8 @@ export const config = {
     process.env.EXPO_PUBLIC_BACKEND_BASE_URL || 'http://localhost:3000',
 
   API_ROUTES: {
+    AUTH_LOGIN: '/auth/login',
+    AUTH_ME: '/auth/me',
     STOCK_SYMBOLS: '/stock/symbol',
     STOCK_QUOTE: '/stock/quote',
     COMPANY_PROFILE: '/stock/profile2',

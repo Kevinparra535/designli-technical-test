@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import qs from 'qs';
 
 import { config } from '@/config/config';
 import { TYPES } from '@/config/types';
 
-// import { AuthServiceImpl } from '../services/authService';
 import Logger from '@/ui/utils/Logger';
+
+import type { AuthTokenStore } from '@/data/storage/authTokenStore';
 
 export interface HttpManager {
   get<T = any>(
@@ -41,8 +42,10 @@ export class AxiosHttpManager implements HttpManager {
    * Constructs a new instance of AxiosHttpManager.
    * @param authService - The authentication service used for checking active session.
    */
-  constructor() {
-    // @inject(TYPES.AuthService) private authService: AuthServiceImpl
+  constructor(
+    @inject(TYPES.AuthTokenStore)
+    private readonly authTokenStore: AuthTokenStore,
+  ) {
     this.http = axios.create({
       baseURL: config.BASE_URL,
       timeout: 1000 * 60 * 5, // 5 minutes
@@ -160,13 +163,12 @@ export class AxiosHttpManager implements HttpManager {
 
   private _handleRequest = async (config: AxiosRequestConfig): Promise<any> => {
     try {
-      // const session = await this.authService.checkActiveSession(); // Asume que authService tiene un método getToken()
-
-      // if (session) {
-      //   config.headers = config.headers || {}; // Initialize headers if undefined
-      //   config.headers.Authorization = `Bearer ${session.access_token}`;
-      // }
-
+      const token = this.authTokenStore.getToken();
+      if (token) {
+        config.headers = config.headers || {};
+        (config.headers as Record<string, string>).Authorization =
+          `Bearer ${token}`;
+      }
       return config;
     } catch (error: any) {
       this.logger.error(error);

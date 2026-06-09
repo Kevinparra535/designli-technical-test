@@ -9,6 +9,8 @@ import { TYPES } from '@/config/types';
 
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
+import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+
 import { HomeViewModel } from './HomeViewModel';
 
 type HomeNavigation = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -16,6 +18,10 @@ type HomeNavigation = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 export const HomeScreen = observer(() => {
   const vm = useMemo(
     () => container.get<HomeViewModel>(TYPES.HomeViewModel),
+    [],
+  );
+  const session = useMemo(
+    () => container.get<SessionViewModel>(TYPES.SessionViewModel),
     [],
   );
   const navigation = useNavigation<HomeNavigation>();
@@ -43,7 +49,11 @@ export const HomeScreen = observer(() => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Home!</Text>
+      <Text style={styles.title}>
+        {session.currentUser
+          ? `Welcome, ${session.currentUser.email}`
+          : 'Welcome to Home!'}
+      </Text>
 
       <View style={styles.liveCard}>
         <Text style={styles.liveHeading}>Live prices</Text>
@@ -63,6 +73,14 @@ export const HomeScreen = observer(() => {
         style={styles.button}
       >
         <Text style={styles.buttonText}>Create price alert</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => session.signOut()}
+        accessibilityRole="button"
+        style={styles.secondaryButton}
+      >
+        <Text style={styles.secondaryButtonText}>Sign out</Text>
       </Pressable>
     </View>
   );
@@ -121,4 +139,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  secondaryButton: { paddingVertical: 10, alignItems: 'center' },
+  secondaryButtonText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
 });

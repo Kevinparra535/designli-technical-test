@@ -29,6 +29,10 @@ import { Container } from 'inversify';
 
 import { TYPES } from '@/config/types';
 
+import {
+  AuthApiManager,
+  AuthApiManagerImpl,
+} from '@/data/network/authApiManager';
 import { AxiosHttpManager, HttpManager } from '@/data/network/axiosManager';
 import {
   FinnhubManager,
@@ -51,6 +55,7 @@ import {
   WebhookManagerImpl,
 } from '@/data/network/webhookManager';
 
+import { AuthServiceImpl } from '@/data/services/AuthServiceImpl';
 import { NotificationServiceImpl } from '@/data/services/NotificationServiceImpl';
 import { RealtimePriceServiceImpl } from '@/data/services/RealtimePriceServiceImpl';
 import { StockAlertServiceImpl } from '@/data/services/StockAlertServiceImpl';
@@ -58,25 +63,37 @@ import { StockServiceImpl } from '@/data/services/StockServiceImpl';
 
 import { NotificationRepositoryImpl } from '@/data/repositories/NotificationRepositoryImpl';
 import { RealtimePriceRepositoryImpl } from '@/data/repositories/RealtimePriceRepositoryImpl';
+import { SessionRepositoryImpl } from '@/data/repositories/SessionRepositoryImpl';
 import { StockAlertRepositoryImpl } from '@/data/repositories/StockAlertRepositoryImpl';
 import { StockRepositoryImpl } from '@/data/repositories/StockRepositoryImpl';
 
 import type { NotificationRepository } from '@/domain/repositories/NotificationRepository';
 import type { RealtimePriceRepository } from '@/domain/repositories/RealtimePriceRepository';
+import type { SessionRepository } from '@/domain/repositories/SessionRepository';
 import type { StockAlertRepository } from '@/domain/repositories/StockAlertRepository';
 import type { StockRepository } from '@/domain/repositories/StockRepository';
+import type { AuthService } from '@/domain/services/AuthService';
 import type { NotificationService } from '@/domain/services/NotificationService';
 import type { RealtimePriceService } from '@/domain/services/RealtimePriceService';
 import type { StockAlertService } from '@/domain/services/StockAlertService';
 import type { StockService } from '@/domain/services/StockService';
 
+import { CheckActiveSessionUseCase } from '@/domain/useCases/CheckActiveSessionUseCase';
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
+import { LoginUseCase } from '@/domain/useCases/LoginUseCase';
+import { LogoutUseCase } from '@/domain/useCases/LogoutUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
 
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
+import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+
+import {
+  AuthTokenStore,
+  SecureAuthTokenStore,
+} from '@/data/storage/authTokenStore';
 
 export const container = new Container();
 
@@ -111,6 +128,17 @@ container
   .to(FinnhubSocketManagerImpl)
   .inSingletonScope();
 
+container
+  .bind<AuthApiManager>(TYPES.AuthApiManager)
+  .to(AuthApiManagerImpl)
+  .inSingletonScope();
+
+// Storage
+container
+  .bind<AuthTokenStore>(TYPES.AuthTokenStore)
+  .to(SecureAuthTokenStore)
+  .inSingletonScope();
+
 // Services (domain contract → data impl; wraps a manager, maps to domain)
 container
   .bind<StockService>(TYPES.StockService)
@@ -130,6 +158,11 @@ container
 container
   .bind<RealtimePriceService>(TYPES.RealtimePriceService)
   .to(RealtimePriceServiceImpl)
+  .inSingletonScope();
+
+container
+  .bind<AuthService>(TYPES.AuthService)
+  .to(AuthServiceImpl)
   .inSingletonScope();
 
 // Repositories (domain contract → data impl; delegates to a service)
@@ -153,6 +186,11 @@ container
   .to(RealtimePriceRepositoryImpl)
   .inSingletonScope();
 
+container
+  .bind<SessionRepository>(TYPES.SessionRepository)
+  .to(SessionRepositoryImpl)
+  .inSingletonScope();
+
 // UseCases
 container
   .bind<GetStockListUseCase>(TYPES.GetStockListUseCase)
@@ -172,8 +210,20 @@ container
   .bind<SubscribeToPricesUseCase>(TYPES.SubscribeToPricesUseCase)
   .to(SubscribeToPricesUseCase);
 
+container.bind<LoginUseCase>(TYPES.LoginUseCase).to(LoginUseCase);
+container
+  .bind<CheckActiveSessionUseCase>(TYPES.CheckActiveSessionUseCase)
+  .to(CheckActiveSessionUseCase);
+container.bind<LogoutUseCase>(TYPES.LogoutUseCase).to(LogoutUseCase);
+
 // UI ViewModels
 container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);
 container
   .bind<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel)
   .to(CreateStockAlertViewModel);
+
+// Session is app-global → singleton (the rare global-VM exception).
+container
+  .bind<SessionViewModel>(TYPES.SessionViewModel)
+  .to(SessionViewModel)
+  .inSingletonScope();
