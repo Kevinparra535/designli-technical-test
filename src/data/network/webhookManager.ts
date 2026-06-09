@@ -18,12 +18,22 @@ export interface WebhookRegistration {
   createdAt: string;
 }
 
+/** Response of POST /webhooks/:id/test — the push fan-out outcome. */
+export interface WebhookTestResult {
+  alertId: string;
+  symbol: string;
+  currentPrice: number;
+  devices: number;
+  sent: number;
+  failed: number;
+}
+
 export interface WebhookManager {
   registerWebhook(url: string, event: string): Promise<WebhookRegistration>;
   getWebhook(webhookId: string): Promise<WebhookRegistration>;
   listWebhooks(): Promise<WebhookRegistration[]>;
   deleteWebhook(webhookId: string): Promise<void>;
-  testWebhook(webhookId: string): Promise<void>;
+  testWebhook(webhookId: string): Promise<WebhookTestResult>;
 }
 
 @injectable()
@@ -91,10 +101,10 @@ export class WebhookManagerImpl implements WebhookManager {
     await this.http.delete(url);
   }
 
-  async testWebhook(webhookId: string): Promise<void> {
+  async testWebhook(webhookId: string): Promise<WebhookTestResult> {
     const url = this.buildUrl(
       `/webhooks/${encodeURIComponent(webhookId)}/test`,
     );
-    await this.http.post(url, {});
+    return this.http.post<WebhookTestResult>(url, {});
   }
 }

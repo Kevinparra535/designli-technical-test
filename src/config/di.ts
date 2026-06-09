@@ -88,6 +88,7 @@ import { LoginUseCase } from '@/domain/useCases/LoginUseCase';
 import { LogoutUseCase } from '@/domain/useCases/LogoutUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
+import { TestStockAlertUseCase } from '@/domain/useCases/TestStockAlertUseCase';
 
 import { AlertsListViewModel } from '@/ui/screens/AlertsList/AlertsListViewModel';
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
@@ -216,6 +217,10 @@ container
 container
   .bind<DeleteStockAlertUseCase>(TYPES.DeleteStockAlertUseCase)
   .to(DeleteStockAlertUseCase);
+
+container
+  .bind<TestStockAlertUseCase>(TYPES.TestStockAlertUseCase)
+  .to(TestStockAlertUseCase);
 
 container
   .bind<RegisterPushNotificationsUseCase>(

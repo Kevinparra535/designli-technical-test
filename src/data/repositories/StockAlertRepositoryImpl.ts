@@ -7,6 +7,7 @@ import { inject, injectable } from 'inversify';
 
 import { TYPES } from '@/config/types';
 
+import { AlertTestResult } from '@/domain/entities/AlertTestResult';
 import { StockAlert } from '@/domain/entities/StockAlert';
 
 import type { StockAlertRepository } from '@/domain/repositories/StockAlertRepository';
@@ -29,5 +30,9 @@ export class StockAlertRepositoryImpl implements StockAlertRepository {
 
   deleteAlert(id: string): Promise<void> {
     return this.service.deleteAlert(id);
+  }
+
+  testAlert(id: string): Promise<AlertTestResult> {
+    return this.service.testAlert(id);
   }
 }

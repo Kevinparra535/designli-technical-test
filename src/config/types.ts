@@ -47,6 +47,7 @@ export const TYPES = {
   CreateStockAlertUseCase: Symbol.for('CreateStockAlertUseCase'),
   GetStockAlertsUseCase: Symbol.for('GetStockAlertsUseCase'),
   DeleteStockAlertUseCase: Symbol.for('DeleteStockAlertUseCase'),
+  TestStockAlertUseCase: Symbol.for('TestStockAlertUseCase'),
   RegisterPushNotificationsUseCase: Symbol.for(
     'RegisterPushNotificationsUseCase',
   ),

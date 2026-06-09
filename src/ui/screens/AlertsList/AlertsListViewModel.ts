@@ -7,6 +7,7 @@ import { StockAlert } from '@/domain/entities/StockAlert';
 
 import { DeleteStockAlertUseCase } from '@/domain/useCases/DeleteStockAlertUseCase';
 import { GetStockAlertsUseCase } from '@/domain/useCases/GetStockAlertsUseCase';
+import { TestStockAlertUseCase } from '@/domain/useCases/TestStockAlertUseCase';
 
 import Logger from '@/ui/utils/Logger';
 
@@ -18,8 +19,10 @@ export class AlertsListViewModel {
   isRefreshing = false;
   error: string | null = null;
 
-  // ── Write group (per-row delete) ───────────────────────────────────────────
+  // ── Write group (per-row delete / test) ────────────────────────────────────
   deletingId: string | null = null;
+  testingId: string | null = null;
+  testMessage: string | null = null;
 
   private logger = new Logger('AlertsListViewModel');
 
@@ -28,6 +31,8 @@ export class AlertsListViewModel {
     private readonly getStockAlertsUseCase: GetStockAlertsUseCase,
     @inject(TYPES.DeleteStockAlertUseCase)
     private readonly deleteStockAlertUseCase: DeleteStockAlertUseCase,
+    @inject(TYPES.TestStockAlertUseCase)
+    private readonly testStockAlertUseCase: TestStockAlertUseCase,
   ) {
     makeAutoObservable(this);
   }
@@ -82,6 +87,59 @@ export class AlertsListViewModel {
         this.deletingId = null;
       });
     }
+  }
+
+  /** Fire a test push notification for an alert and surface the outcome. */
+  async test(id: string): Promise<void> {
+    if (this.testingId) return;
+    runInAction(() => {
+      this.testingId = id;
+      this.testMessage = null;
+      this.error = null;
+    });
+    try {
+      const result = await this.testStockAlertUseCase.run(id);
+
+      if (result.sent > 0) {
+        this.logger.info(
+          `✅ Test notification sent for ${result.symbol}: ${result.sent}/${result.devices} device(s) delivered.`,
+        );
+      } else {
+        this.logger.error(
+          `❌ Test notification failed for ${result.symbol}: 0/${result.devices} delivered` +
+            (result.failed > 0
+              ? ` (${result.failed} failed)`
+              : ' (no devices registered)') +
+            '.',
+        );
+      }
+
+      runInAction(() => {
+        this.testMessage =
+          result.devices === 0
+            ? 'No devices registered for push yet — open the app on a device build.'
+            : `Test sent for ${result.symbol} · ${result.sent}/${result.devices} device(s)` +
+              (result.failed > 0 ? ` · ${result.failed} failed` : '');
+      });
+    } catch (error) {
+      this.logger.error(
+        `❌ Test notification request failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      this.handleError(error, 'test');
+    } finally {
+      runInAction(() => {
+        this.testingId = null;
+      });
+    }
+  }
+
+  /** Dismiss the transient test-result banner. */
+  clearTestMessage(): void {
+    runInAction(() => {
+      this.testMessage = null;
+    });
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────

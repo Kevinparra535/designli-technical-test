@@ -9,12 +9,14 @@ import { inject, injectable } from 'inversify';
 import { config } from '@/config/config';
 import { TYPES } from '@/config/types';
 
+import { AlertTestResult } from '@/domain/entities/AlertTestResult';
 import { StockAlert } from '@/domain/entities/StockAlert';
 
 import type { StockAlertService } from '@/domain/services/StockAlertService';
 
 import { WebhookManager } from '@/data/network/webhookManager';
 
+import { AlertTestResultModel } from '@/data/models/AlertTestResultModel';
 import {
   STOCK_ALERT_EVENT_PREFIX,
   StockAlertModel,
@@ -40,15 +42,22 @@ export class StockAlertServiceImpl implements StockAlertService {
 
   async getAlerts(): Promise<StockAlert[]> {
     const registrations = await this.service.listWebhooks();
-    return registrations
-      // The backend stores all webhooks together; keep only stock price alerts.
-      .filter((reg) => reg.event.startsWith(`${STOCK_ALERT_EVENT_PREFIX}:`))
-      .map((reg) => StockAlertModel.fromJson(reg).toDomain())
-      // Newest first.
-      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+    return (
+      registrations
+        // The backend stores all webhooks together; keep only stock price alerts.
+        .filter((reg) => reg.event.startsWith(`${STOCK_ALERT_EVENT_PREFIX}:`))
+        .map((reg) => StockAlertModel.fromJson(reg).toDomain())
+        // Newest first.
+        .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    );
   }
 
   deleteAlert(id: string): Promise<void> {
     return this.service.deleteWebhook(id);
+  }
+
+  async testAlert(id: string): Promise<AlertTestResult> {
+    const result = await this.service.testWebhook(id);
+    return AlertTestResultModel.fromJson(result).toDomain();
   }
 }
