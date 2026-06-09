@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Designli · Stock Alerts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0A0C0F; height: 100%; }
+  #root { height: 100vh; }
+  @keyframes dl-spin { to { transform: rotate(360deg); } }
+  @keyframes dl-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dl-sheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes dl-drop { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes dl-pop { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes dl-popv { from { transform: scale(0.9); } to { transform: scale(1); } }
+  @keyframes dl-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="app/data.js"></script>
+<script type="text/babel" src="app/ios-frame.jsx"></script>
+<script type="text/babel" src="app/design-canvas.jsx"></script>
+<script type="text/babel" src="app/ui.jsx"></script>
+<script type="text/babel" src="app/screens.jsx"></script>
+<script type="text/babel" src="app/app.jsx"></script>
+<script type="text/babel" src="app/variations.jsx"></script>
+<script type="text/babel" src="app/onboarding.jsx"></script>
+<script type="text/babel" src="app/designsystem.jsx"></script>
+
+<script type="text/babel">
+const {
+  IOSDevice, DesignCanvas, DCSection, DCArtboard,
+  TabBar, T,
+  HomeScreen, DetailScreen, SetAlertSheet, AlertsScreen, PushLockScreen, InteractiveApp,
+  HomeHeatmap, HomeEditorial, LoginScreen, PermissionsScreen,
+  DSColors, DSType, DSData, DSButtons, DSInputs, DSControls, DSRows, DSStates,
+} = window;
+
+const noop = () => {};
+
+/* full first-run flow: login → permissions → app */
+function FlowApp() {
+  const [step, setStep] = React.useState('login'); // login | perms | app
+  if (step === 'login') return <LoginScreen onSubmit={() => setStep('perms')} />;
+  if (step === 'perms') return <PermissionsScreen onDone={() => setStep('app')} />;
+  return <InteractiveApp />;
+}
+
+/* phone shell with a static tab bar */
+function Shell({ children, tab = 'home' }) {
+  return (
+    <div style={{ height: '100%', background: T.bg, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>{children}</div>
+      <div style={{ paddingBottom: 22 }}><TabBar active={tab} onTab={noop} /></div>
+    </div>
+  );
+}
+/* artboard wrappers */
+const PB = '#000';          // phone artboard backing
+const DB = '#0A0C0F';       // design-system artboard backing
+
+function App() {
+  return (
+    <DesignCanvas>
+      {/* ── Interactive prototype ─────────────────────────────── */}
+      <DCSection id="proto" title="Prototipo interactivo" subtitle="Flujo completo: login -> permisos -> mercado -> detalle -> crear alerta -> alertas.">
+        <DCArtboard id="live" label="Live - flujo completo" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><FlowApp /></IOSDevice>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="onb" title="Onboarding" subtitle="Inicio de sesion y permiso de notificaciones (con dialogo nativo de iOS).">
+        <DCArtboard id="login" label="Login" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><LoginScreen onSubmit={noop} /></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="perms" label="Permisos - propuesta" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><PermissionsScreen onDone={noop} /></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="perms-dlg" label="Permisos - dialogo iOS" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><PermissionsScreen onDone={noop} forceDialog /></IOSDevice>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Key screens ───────────────────────────────────────── */}
+      <DCSection id="flow" title="Pantallas clave" subtitle="El flujo del MVP, pantalla por pantalla.">
+        <DCArtboard id="detail" label="Detalle + gráfica" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><DetailScreen sym="NVDA" hasAlert={{ cond: 'above', target: 1100 }} onBack={noop} onCreateAlert={noop} /></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="sheet" label="Crear alerta (sheet)" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark>
+            <div style={{ position: 'relative', height: '100%' }}>
+              <DetailScreen sym="NVDA" onBack={noop} onCreateAlert={noop} />
+              <SetAlertSheet sym="NVDA" onClose={noop} onCreated={noop} />
+            </div>
+          </IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="alerts" label="Alertas · estados" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><Shell tab="alerts"><AlertsScreen alerts={window.ALERTS} onToggle={noop} onGoMarket={noop} /></Shell></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="empty" label="Alertas · vacío" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><Shell tab="alerts"><AlertsScreen alerts={[]} onToggle={noop} onGoMarket={noop} /></Shell></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="push" label="Push · FCM" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><PushLockScreen /></IOSDevice>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Home directions ───────────────────────────────────── */}
+      <DCSection id="vars" title="Variaciones del Home" subtitle="Tres direcciones para el mismo contenido.">
+        <DCArtboard id="v-list" label="A · Lista limpia" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><Shell tab="home"><HomeScreen onOpen={noop} /></Shell></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="v-heat" label="B · Mapa de calor" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><Shell tab="home"><HomeHeatmap /></Shell></IOSDevice>
+        </DCArtboard>
+        <DCArtboard id="v-edit" label="C · Editorial" width={402} height={874} style={{ background: PB }}>
+          <IOSDevice dark><Shell tab="home"><HomeEditorial /></Shell></IOSDevice>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Design system ─────────────────────────────────────── */}
+      <DCSection id="ds" title="Design System" subtitle="Tokens y componentes con todos sus estados.">
+        <DCArtboard id="ds-color" label="Color" width={760} height={512} style={{ background: DB }}><DSColors /></DCArtboard>
+        <DCArtboard id="ds-type" label="Tipografía" width={760} height={434} style={{ background: DB }}><DSType /></DCArtboard>
+        <DCArtboard id="ds-data" label="Datos & deltas" width={760} height={278} style={{ background: DB }}><DSData /></DCArtboard>
+        <DCArtboard id="ds-btn" label="Botones" width={760} height={276} style={{ background: DB }}><DSButtons /></DCArtboard>
+        <DCArtboard id="ds-input" label="Campos" width={760} height={478} style={{ background: DB }}><DSInputs /></DCArtboard>
+        <DCArtboard id="ds-seg" label="Segmented" width={460} height={178} style={{ background: DB }}><DSControls /></DCArtboard>
+        <DCArtboard id="ds-rows" label="Filas & alertas" width={460} height={476} style={{ background: DB }}><DSRows /></DCArtboard>
+        <DCArtboard id="ds-states" label="Feedback" width={760} height={278} style={{ background: DB }}><DSStates /></DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

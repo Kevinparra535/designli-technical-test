@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,7 +10,8 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import type { RouteProp } from '@react-navigation/native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
@@ -30,6 +32,11 @@ export const CreateStockAlertScreen = observer(() => {
     [],
   );
 
+  const navigation =
+    useNavigation<
+      NativeStackNavigationProp<RootStackParamList, 'CreateStockAlert'>
+    >();
+
   // Prefill the symbol when arriving from the stock detail screen.
   const route = useRoute<RouteProp<RootStackParamList, 'CreateStockAlert'>>();
   const presetSymbol = route.params?.symbol;
@@ -41,8 +48,21 @@ export const CreateStockAlertScreen = observer(() => {
   useEffect(() => () => vm.reset(), [vm]);
 
   const onSubmit = async () => {
+    const symbol = vm.symbol;
     const ok = await vm.submit();
-    if (ok) vm.reset();
+    if (ok) {
+      // Close the modal first, then confirm on the screen we return to.
+      navigation.goBack();
+      Alert.alert(
+        'Alert created',
+        `We'll notify you when ${symbol} hits your target.`,
+      );
+    } else {
+      Alert.alert(
+        "Couldn't create the alert",
+        vm.submitError ?? 'Please try again.',
+      );
+    }
   };
 
   const disabled = !vm.isValid || vm.isSubmitting;
@@ -114,13 +134,6 @@ export const CreateStockAlertScreen = observer(() => {
         </View>
       </View>
 
-      {vm.submitError ? (
-        <Text style={styles.error}>{vm.submitError}</Text>
-      ) : null}
-      {vm.hasSubmitSuccess ? (
-        <Text style={styles.success}>Alert created ✔</Text>
-      ) : null}
-
       <Pressable
         onPress={onSubmit}
         disabled={disabled}
@@ -171,8 +184,6 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: 15, fontWeight: '600', color: '#64748B' },
   segmentTextActive: { color: '#2563EB' },
-  error: { color: '#DC2626', fontSize: 14 },
-  success: { color: '#16A34A', fontSize: 14, fontWeight: '600' },
   submit: {
     backgroundColor: '#2563EB',
     borderRadius: 12,
