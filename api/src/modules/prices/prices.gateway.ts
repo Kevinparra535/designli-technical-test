@@ -5,14 +5,19 @@
 // each raw `ws` connection into the hub's transport-agnostic StreamClient.
 //
 // Client → server messages (JSON):
-//   { "type": "subscribe",   "symbols": ["AAPL", "MSFT"] }
+//   { "type": "subscribe",   "symbols": ["AAPL", "MSFT"], "throttleMs": 1000 }
 //   { "type": "unsubscribe", "symbols": ["AAPL"] }
+//   { "type": "throttle",    "throttleMs": 1000 }   // change cadence only
 //   { "type": "ping" }
+//
+// `throttleMs` is optional and per-client (clamped 100–10000 ms); it sets how
+// often THIS client receives coalesced `prices` updates.
 //
 // Server → client messages (JSON):
 //   { "type": "welcome",  "path": "/ws" }
 //   { "type": "snapshot", "data": [{ symbol, price, t }] }   // last known prices
 //   { "type": "prices",   "data": [{ symbol, price, t }] }   // coalesced ticks
+//   { "type": "throttle", "throttleMs": 1000 }               // ack (clamped)
 //   { "type": "pong" }
 
 import type { Server } from 'node:http';
@@ -25,11 +30,16 @@ import { priceHub, type StreamClient } from './priceHub';
 interface ClientMessage {
   type?: string;
   symbols?: unknown;
+  throttleMs?: unknown;
 }
 
 function asSymbolArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((s): s is string => typeof s === 'string');
+}
+
+function asThrottle(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 export function attachPriceGateway(server: Server): WebSocketServer {
@@ -56,11 +66,20 @@ export function attachPriceGateway(server: Server): WebSocketServer {
       }
       switch (msg.type) {
         case 'subscribe':
-          priceHub.subscribe(client, asSymbolArray(msg.symbols));
+          priceHub.subscribe(
+            client,
+            asSymbolArray(msg.symbols),
+            asThrottle(msg.throttleMs),
+          );
           break;
         case 'unsubscribe':
           priceHub.unsubscribe(client, asSymbolArray(msg.symbols));
           break;
+        case 'throttle': {
+          const ms = asThrottle(msg.throttleMs);
+          if (ms !== undefined) priceHub.setThrottle(client, ms);
+          break;
+        }
         case 'ping':
           client.send({ type: 'pong' });
           break;

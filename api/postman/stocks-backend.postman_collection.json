@@ -257,7 +257,7 @@
               "port": "3000",
               "path": ["ws"]
             },
-            "description": "Endpoint de precios en tiempo real (WebSocket).\n\nEn Postman: New → WebSocket Request → URL `{{wsUrl}}` (`ws://localhost:3000/ws`) → Connect.\n\nMensajes a enviar (cliente → servidor):\n\n```\n{ \"type\": \"subscribe\", \"symbols\": [\"AAPL\", \"BINANCE:BTCUSDT\"] }\n{ \"type\": \"unsubscribe\", \"symbols\": [\"AAPL\"] }\n{ \"type\": \"ping\" }\n```\n\nMensajes que recibes (servidor → cliente): `welcome`, `snapshot`, `prices`, `pong`.\n\nNota: necesitas `FINNHUB_API_KEY` para ticks reales. `BINANCE:BTCUSDT` transmite 24/7 (útil fuera de horario de mercado)."
+            "description": "Endpoint de precios en tiempo real (WebSocket).\n\nEn Postman: New → WebSocket Request → URL `{{wsUrl}}` (`ws://localhost:3000/ws`) → Connect.\n\nMensajes a enviar (cliente → servidor). `throttleMs` es opcional, por-cliente, clamp 100–10000 ms:\n\n```\n{ \"type\": \"subscribe\", \"symbols\": [\"AAPL\", \"BINANCE:BTCUSDT\"], \"throttleMs\": 1000 }\n{ \"type\": \"unsubscribe\", \"symbols\": [\"AAPL\"] }\n{ \"type\": \"throttle\", \"throttleMs\": 1000 }\n{ \"type\": \"ping\" }\n```\n\nMensajes que recibes (servidor → cliente): `welcome`, `snapshot`, `prices`, `throttle` (ack), `pong`.\n\nNota: necesitas `FINNHUB_API_KEY` para ticks reales. `BINANCE:BTCUSDT` transmite 24/7 (útil fuera de horario de mercado)."
           },
           "response": []
         }

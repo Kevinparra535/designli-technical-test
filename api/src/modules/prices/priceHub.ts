@@ -8,7 +8,8 @@
 //  - de-duplicate symbol subscriptions across all clients + alerts (ref-count),
 //    subscribing/unsubscribing the upstream socket only on 0↔1 transitions;
 //  - keep the last price per symbol (snapshot for new subscribers);
-//  - coalesce ticks and flush at most every PRICE_THROTTLE_MS (mobile-friendly);
+//  - coalesce ticks and flush on a PER-CLIENT cadence (each client can request
+//    its own throttleMs; defaults to PRICE_THROTTLE_MS) — mobile-friendly;
 //  - evaluate price alerts inline on each tick (no polling) → FCM + deactivate.
 //
 // Transport-agnostic: it talks to clients through the StreamClient interface, so
@@ -31,6 +32,13 @@ export interface StreamClient {
   readonly subscriptions: Set<string>;
 }
 
+/** Per-client fan-out state: its cadence, pending (changed) symbols, and timer. */
+interface ClientState {
+  throttleMs: number;
+  pending: Set<string>;
+  timer: NodeJS.Timeout;
+}
+
 interface AlertEntry extends DecodedAlert {
   id: string;
   firing: boolean;
@@ -41,17 +49,20 @@ interface PricePoint {
   t: number;
 }
 
+// Bounds for a client-requested cadence (protects against abuse / busy loops).
+const MIN_THROTTLE_MS = 100;
+const MAX_THROTTLE_MS = 10000;
+
 class PriceHub {
   private readonly lastPrice = new Map<string, PricePoint>();
-  private readonly dirty = new Set<string>();
   /** symbol → number of holders (client subscriptions + alerts). */
   private readonly refs = new Map<string, number>();
   /** symbol → active alerts on it. */
   private readonly alerts = new Map<string, AlertEntry[]>();
   /** alertId → symbol (so DELETE / fire can release the right ref). */
   private readonly alertSymbol = new Map<string, string>();
-  private readonly clients = new Set<StreamClient>();
-  private flushTimer: NodeJS.Timeout | null = null;
+  /** client → its fan-out state. */
+  private readonly clients = new Map<StreamClient, ClientState>();
   private started = false;
 
   async start(): Promise<void> {
@@ -72,32 +83,42 @@ class PriceHub {
       console.error('[hub] could not load active alerts:', err);
     }
 
-    this.flushTimer = setInterval(() => this.flush(), env.PRICE_THROTTLE_MS);
     console.log(
-      `[hub] started — ${loaded} active alert(s), flush every ${env.PRICE_THROTTLE_MS}ms`,
+      `[hub] started — ${loaded} active alert(s), default cadence ${env.PRICE_THROTTLE_MS}ms`,
     );
   }
 
   stop(): void {
     this.started = false;
-    if (this.flushTimer) clearInterval(this.flushTimer);
-    this.flushTimer = null;
+    for (const state of this.clients.values()) clearInterval(state.timer);
+    this.clients.clear();
     finnhubSocket.stop();
   }
 
   // --- client lifecycle (called by the gateway) ----------------------------
 
   addClient(client: StreamClient): void {
-    this.clients.add(client);
+    if (this.clients.has(client)) return;
+    const throttleMs = env.PRICE_THROTTLE_MS;
+    const state: ClientState = {
+      throttleMs,
+      pending: new Set<string>(),
+      timer: setInterval(() => this.flushClient(client), throttleMs),
+    };
+    this.clients.set(client, state);
   }
 
   removeClient(client: StreamClient): void {
+    const state = this.clients.get(client);
+    if (state) clearInterval(state.timer);
     this.clients.delete(client);
     for (const symbol of client.subscriptions) this.release(symbol);
     client.subscriptions.clear();
   }
 
-  subscribe(client: StreamClient, symbols: string[]): void {
+  subscribe(client: StreamClient, symbols: string[], throttleMs?: number): void {
+    if (throttleMs !== undefined) this.setThrottle(client, throttleMs);
+
     const snapshot: { symbol: string; price: number; t: number }[] = [];
     for (const raw of symbols) {
       const symbol = raw.trim().toUpperCase();
@@ -116,6 +137,18 @@ class PriceHub {
       if (!client.subscriptions.delete(symbol)) continue;
       this.release(symbol);
     }
+  }
+
+  /** Change a client's fan-out cadence (clamped). Restarts its timer. */
+  setThrottle(client: StreamClient, throttleMs: number): void {
+    const state = this.clients.get(client);
+    if (!state || !Number.isFinite(throttleMs)) return;
+    const next = Math.min(MAX_THROTTLE_MS, Math.max(MIN_THROTTLE_MS, throttleMs));
+    if (next === state.throttleMs) return;
+    state.throttleMs = next;
+    clearInterval(state.timer);
+    state.timer = setInterval(() => this.flushClient(client), next);
+    client.send({ type: 'throttle', throttleMs: next });
   }
 
   // --- alerts --------------------------------------------------------------
@@ -150,7 +183,13 @@ class PriceHub {
   private onTrade(trade: Trade): void {
     const symbol = trade.symbol.toUpperCase();
     this.lastPrice.set(symbol, { price: trade.price, t: trade.timestamp });
-    this.dirty.add(symbol);
+
+    // Mark the symbol pending for every client watching it; each client drains
+    // its own pending set on its own cadence.
+    for (const [client, state] of this.clients) {
+      if (client.subscriptions.has(symbol)) state.pending.add(symbol);
+    }
+
     void this.evaluateAlerts(symbol, trade.price);
   }
 
@@ -185,21 +224,20 @@ class PriceHub {
     }
   }
 
-  /** Fan out coalesced price updates to subscribed clients. */
-  private flush(): void {
-    if (this.dirty.size === 0) return;
+  /** Drain one client's pending symbols and send the coalesced prices to it. */
+  private flushClient(client: StreamClient): void {
+    const state = this.clients.get(client);
+    if (!state || state.pending.size === 0) return;
 
-    const updates: { symbol: string; price: number; t: number }[] = [];
-    for (const symbol of this.dirty) {
+    const data: { symbol: string; price: number; t: number }[] = [];
+    for (const symbol of state.pending) {
       const last = this.lastPrice.get(symbol);
-      if (last) updates.push({ symbol, price: last.price, t: last.t });
+      if (last && client.subscriptions.has(symbol)) {
+        data.push({ symbol, price: last.price, t: last.t });
+      }
     }
-    this.dirty.clear();
-
-    for (const client of this.clients) {
-      const slice = updates.filter((u) => client.subscriptions.has(u.symbol));
-      if (slice.length) client.send({ type: 'prices', data: slice });
-    }
+    state.pending.clear();
+    if (data.length) client.send({ type: 'prices', data });
   }
 
   // --- subscription ref-counting ------------------------------------------

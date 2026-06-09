@@ -109,8 +109,10 @@ Performance properties:
 
 - **De-duplication**: the hub ref-counts symbols (clients **and** alerts); the
   upstream socket subscribes only on 0→1 and unsubscribes on 1→0.
-- **Coalescing**: ticks are buffered and flushed at most every `PRICE_THROTTLE_MS`
-  (default 400 ms) — protects React Native from re-render storms.
+- **Coalescing (per-client)**: each client drains its own buffer of changed
+  symbols on its own cadence. Default is `PRICE_THROTTLE_MS` (400 ms); a client
+  can request its own via `throttleMs` (clamped 100–10000 ms) — protects React
+  Native from re-render storms while letting each screen pick its refresh rate.
 - **Snapshot**: a new subscriber immediately gets the last known price from the
   in-memory cache (no upstream round-trip).
 - **Inline alerts**: each tick evaluates alerts on that symbol → instant FCM,
@@ -118,11 +120,12 @@ Performance properties:
 
 ### WebSocket protocol (`/ws`)
 
-Client → server:
+Client → server (`throttleMs` is optional, per-client, clamped 100–10000 ms):
 
 ```json
-{ "type": "subscribe",   "symbols": ["AAPL", "MSFT"] }
+{ "type": "subscribe",   "symbols": ["AAPL", "MSFT"], "throttleMs": 1000 }
 { "type": "unsubscribe", "symbols": ["AAPL"] }
+{ "type": "throttle",    "throttleMs": 1000 }
 { "type": "ping" }
 ```
 
@@ -132,8 +135,14 @@ Server → client:
 { "type": "welcome",  "path": "/ws" }
 { "type": "snapshot", "data": [{ "symbol": "AAPL", "price": 152.3, "t": 1718000000000 }] }
 { "type": "prices",   "data": [{ "symbol": "AAPL", "price": 152.4, "t": 1718000000400 }] }
+{ "type": "throttle", "throttleMs": 1000 }
 { "type": "pong" }
 ```
+
+> The default cadence (`PRICE_THROTTLE_MS`) is the fallback; each client may set
+> its own rate via `throttleMs` on `subscribe`, or change it any time with a
+> `throttle` message. The server replies with a `throttle` ack carrying the
+> effective (clamped) value.
 
 > Needs a real `FINNHUB_API_KEY` to receive live ticks (the free tier streams US
 > stocks during market hours). Without a key the hub still runs; `/ws` accepts
@@ -286,7 +295,7 @@ Subscribe to the real-time stream (needs `FINNHUB_API_KEY`):
 
 ```bash
 node -e "const W=require('ws');const ws=new W('ws://localhost:3000/ws');\
-ws.on('open',()=>ws.send(JSON.stringify({type:'subscribe',symbols:['AAPL','BINANCE:BTCUSDT']})));\
+ws.on('open',()=>ws.send(JSON.stringify({type:'subscribe',symbols:['AAPL','BINANCE:BTCUSDT'],throttleMs:1000})));\
 ws.on('message',m=>console.log(m.toString()));"
 ```
 
