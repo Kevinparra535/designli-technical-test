@@ -91,6 +91,31 @@ export async function sendPriceAlert(payload: PriceAlertPush): Promise<boolean> 
   }
 }
 
+/**
+ * Send a generic test push to a single token — used by POST /devices/test to
+ * verify that notifications actually arrive on the device (no alert involved).
+ * Returns true on success, false if FCM is disabled or the send failed.
+ */
+export async function sendTestPush(token: string): Promise<boolean> {
+  const instance = getApp();
+  if (!instance) return false;
+  try {
+    await instance.messaging().send({
+      token,
+      notification: {
+        title: 'Test notification ✅',
+        body: 'Your device is correctly registered for push notifications.',
+      },
+      data: { type: 'test' },
+      android: { priority: 'high' },
+    });
+    return true;
+  } catch (err) {
+    console.error(`[fcm] test send to ${token.slice(0, 12)}… failed:`, err);
+    return false;
+  }
+}
+
 export function isFcmEnabled(): boolean {
   return getApp() !== null;
 }

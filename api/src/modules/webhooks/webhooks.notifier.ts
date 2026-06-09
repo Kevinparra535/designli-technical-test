@@ -19,15 +19,21 @@ export interface NotifyResult {
   failed: number;
 }
 
-/** Push an alert to all active device tokens. */
+/**
+ * Push an alert to the owning user's active device tokens. When `userId` is null
+ * (legacy/anonymous alert) it falls back to broadcasting to all active devices.
+ */
 export async function notifyDevices(
   alertId: string,
   symbol: string,
   condition: 'above' | 'below',
   targetPrice: number,
   currentPrice: number,
+  userId: string | null,
 ): Promise<NotifyResult> {
-  const tokens = await devices.listActiveTokens();
+  const tokens = userId
+    ? await devices.listActiveTokensForUser(userId)
+    : await devices.listActiveTokens();
   let sent = 0;
   let failed = 0;
 
@@ -75,5 +81,6 @@ export async function fireTestAlert(row: WebhookRow): Promise<NotifyResult> {
     decoded.condition,
     decoded.targetPrice,
     currentPrice,
+    row.user_id,
   );
 }

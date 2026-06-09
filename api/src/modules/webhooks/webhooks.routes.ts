@@ -13,9 +13,9 @@ import Joi from 'joi';
 
 import { HttpError } from '../../lib/httpError';
 import { asyncHandler } from '../../middleware/asyncHandler';
-import { optionalAuth } from '../../middleware/auth';
 import { validatorHandler } from '../../middleware/validatorHandler';
 import { decodeAlertEvent } from '../../services/alerts';
+import { authenticateJwt } from '../auth/passport';
 import { priceHub } from '../prices/priceHub';
 
 import { fireTestAlert } from './webhooks.notifier';
@@ -42,7 +42,15 @@ function toJson(row: repo.WebhookRow) {
 
 export const webhooksRouter = Router();
 
-webhooksRouter.use(optionalAuth);
+// All alert routes require authentication; alerts are always tied to a user.
+webhooksRouter.use(authenticateJwt);
+
+/** Fetch a webhook and assert the authenticated user owns it (404 otherwise). */
+async function getOwned(id: string, userId: string): Promise<repo.WebhookRow> {
+  const row = await repo.getById(id);
+  if (!row || row.user_id !== userId) throw HttpError.notFound('Webhook not found');
+  return row;
+}
 
 webhooksRouter.post(
   '/',
@@ -55,7 +63,7 @@ webhooksRouter.post(
         'event must be "stock-price-alert:<SYMBOL>:<above|below>:<targetPrice>"',
       );
     }
-    const row = await repo.create(url, event, req.user?.id ?? null);
+    const row = await repo.create(url, event, req.user!.id);
     // Watch this alert's symbol in the real-time hub straight away.
     priceHub.registerAlert(row);
     res.status(201).json(toJson(row));
@@ -65,7 +73,7 @@ webhooksRouter.post(
 webhooksRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const rows = await repo.list(req.user?.id ?? null);
+    const rows = await repo.list(req.user!.id);
     res.json(rows.map(toJson));
   }),
 );
@@ -74,8 +82,7 @@ webhooksRouter.get(
   '/:id',
   validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
-    const row = await repo.getById(req.params.id!);
-    if (!row) throw HttpError.notFound('Webhook not found');
+    const row = await getOwned(req.params.id!, req.user!.id);
     res.json(toJson(row));
   }),
 );
@@ -84,8 +91,8 @@ webhooksRouter.delete(
   '/:id',
   validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
-    const ok = await repo.remove(req.params.id!);
-    if (!ok) throw HttpError.notFound('Webhook not found');
+    await getOwned(req.params.id!, req.user!.id); // 404 if not owner
+    await repo.remove(req.params.id!);
     priceHub.removeAlert(req.params.id!);
     res.status(204).end();
   }),
@@ -95,8 +102,7 @@ webhooksRouter.post(
   '/:id/test',
   validatorHandler(idParamSchema, 'params'),
   asyncHandler(async (req, res) => {
-    const row = await repo.getById(req.params.id!);
-    if (!row) throw HttpError.notFound('Webhook not found');
+    const row = await getOwned(req.params.id!, req.user!.id);
     const result = await fireTestAlert(row);
     res.json(result);
   }),

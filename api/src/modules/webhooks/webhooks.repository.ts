@@ -15,7 +15,7 @@ export interface WebhookRow {
 export async function create(
   url: string,
   event: string,
-  userId: string | null,
+  userId: string,
 ): Promise<WebhookRow> {
   const { rows } = await query<WebhookRow>(
     `INSERT INTO webhooks (url, event, user_id)
@@ -26,21 +26,14 @@ export async function create(
   return rows[0]!;
 }
 
-export async function list(userId: string | null): Promise<WebhookRow[]> {
-  // Authenticated callers see their own + anonymous alerts; anonymous callers
-  // see anonymous alerts only.
-  const { rows } = userId
-    ? await query<WebhookRow>(
-        `SELECT * FROM webhooks
-         WHERE user_id = $1 OR user_id IS NULL
-         ORDER BY created_at DESC`,
-        [userId],
-      )
-    : await query<WebhookRow>(
-        `SELECT * FROM webhooks
-         WHERE user_id IS NULL
-         ORDER BY created_at DESC`,
-      );
+export async function list(userId: string): Promise<WebhookRow[]> {
+  // Each user only sees their own alerts.
+  const { rows } = await query<WebhookRow>(
+    `SELECT * FROM webhooks
+     WHERE user_id = $1
+     ORDER BY created_at DESC`,
+    [userId],
+  );
   return rows;
 }
 

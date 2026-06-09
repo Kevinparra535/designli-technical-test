@@ -184,16 +184,18 @@ All bodies are JSON. Auth endpoints return `{ token, user }`.
 | `POST` | `/auth/register` | — | `{ email, password }` → `201 { token, user }` |
 | `POST` | `/auth/login` | — | `{ email, password }` → `{ token, user }` |
 | `GET` | `/auth/me` | Bearer | `{ user }` |
-| `POST` | `/devices` | optional | `{ token, platform }` → `201 { id, token, platform, active, createdAt }` |
-| `POST` | `/webhooks` | optional | `{ url?, event }` → `201 { id, url, event, active, createdAt }` |
-| `GET` | `/webhooks` | optional | list alerts |
-| `GET` | `/webhooks/:id` | optional | one alert |
-| `DELETE` | `/webhooks/:id` | optional | `204` |
-| `POST` | `/webhooks/:id/test` | optional | fire a test push immediately |
+| `POST` | `/devices` | **Bearer** | `{ token, platform }` → `201 { id, token, platform, active, createdAt }` |
+| `POST` | `/devices/test` | **Bearer** | send a test push to all of the user's devices → `{ fcm, devices, sent, failed, results }` |
+| `POST` | `/webhooks` | **Bearer** | `{ url?, event }` → `201 { id, url, event, active, createdAt }` |
+| `GET` | `/webhooks` | **Bearer** | list the user's alerts |
+| `GET` | `/webhooks/:id` | **Bearer** | one alert (owner only) |
+| `DELETE` | `/webhooks/:id` | **Bearer** | `204` (owner only) |
+| `POST` | `/webhooks/:id/test` | **Bearer** | fire a test push immediately (owner only) |
 
-**Auth is optional** on `/devices` and `/webhooks`: the current app doesn't send
-a token yet, so anonymous calls work. When a `Bearer` token *is* present, the
-device/alert is tied to that user.
+**Auth is required** on `/devices` and `/webhooks` (Passport JWT). Every device
+and alert is tied to the authenticated user, and a fired alert only pushes to
+**that user's** registered devices. Routes that take an `:id` are owner-scoped
+(a non-owner gets `404`).
 
 **Alert `event` format** (set by the app's `StockAlertModel`):
 

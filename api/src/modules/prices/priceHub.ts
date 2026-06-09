@@ -41,6 +41,7 @@ interface ClientState {
 
 interface AlertEntry extends DecodedAlert {
   id: string;
+  userId: string | null;
   firing: boolean;
 }
 
@@ -158,7 +159,13 @@ class PriceHub {
     const decoded = decodeAlertEvent(row.event);
     if (!decoded) return;
     const symbol = decoded.symbol.toUpperCase();
-    const entry: AlertEntry = { ...decoded, symbol, id: row.id, firing: false };
+    const entry: AlertEntry = {
+      ...decoded,
+      symbol,
+      id: row.id,
+      userId: row.user_id,
+      firing: false,
+    };
 
     const list = this.alerts.get(symbol) ?? [];
     list.push(entry);
@@ -213,6 +220,7 @@ class PriceHub {
           entry.condition as AlertCondition,
           entry.targetPrice,
           price,
+          entry.userId,
         );
         await webhooks.markFired(entry.id);
       } catch (err) {

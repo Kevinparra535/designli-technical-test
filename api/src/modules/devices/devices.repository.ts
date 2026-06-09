@@ -16,7 +16,7 @@ export interface DeviceRow {
 export async function upsertByToken(
   token: string,
   platform: string,
-  userId: string | null,
+  userId: string,
 ): Promise<DeviceRow> {
   const { rows } = await query<DeviceRow>(
     `INSERT INTO devices (token, platform, user_id)
@@ -36,6 +36,15 @@ export async function upsertByToken(
 export async function listActiveTokens(): Promise<string[]> {
   const { rows } = await query<{ token: string }>(
     'SELECT token FROM devices WHERE active = TRUE',
+  );
+  return rows.map((r) => r.token);
+}
+
+/** Active device tokens owned by one user — the audience for that user's alerts. */
+export async function listActiveTokensForUser(userId: string): Promise<string[]> {
+  const { rows } = await query<{ token: string }>(
+    'SELECT token FROM devices WHERE active = TRUE AND user_id = $1',
+    [userId],
   );
   return rows.map((r) => r.token);
 }

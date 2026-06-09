@@ -63,6 +63,7 @@ async function tick(): Promise<void> {
         decoded.condition,
         decoded.targetPrice,
         price,
+        row.user_id,
       );
       await webhooks.markFired(row.id);
       console.log(
