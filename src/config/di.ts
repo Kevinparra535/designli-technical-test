@@ -80,6 +80,7 @@ import type { StockService } from '@/domain/services/StockService';
 
 import { CheckActiveSessionUseCase } from '@/domain/useCases/CheckActiveSessionUseCase';
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
+import { GetStockDetailUseCase } from '@/domain/useCases/GetStockDetailUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 import { LoginUseCase } from '@/domain/useCases/LoginUseCase';
 import { LogoutUseCase } from '@/domain/useCases/LogoutUseCase';
@@ -89,6 +90,7 @@ import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUse
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+import { StockDetailViewModel } from '@/ui/screens/StockDetail/StockDetailViewModel';
 
 import {
   AuthTokenStore,
@@ -197,6 +199,10 @@ container
   .to(GetStockListUseCase);
 
 container
+  .bind<GetStockDetailUseCase>(TYPES.GetStockDetailUseCase)
+  .to(GetStockDetailUseCase);
+
+container
   .bind<CreateStockAlertUseCase>(TYPES.CreateStockAlertUseCase)
   .to(CreateStockAlertUseCase);
 
@@ -221,6 +227,9 @@ container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);
 container
   .bind<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel)
   .to(CreateStockAlertViewModel);
+container
+  .bind<StockDetailViewModel>(TYPES.StockDetailViewModel)
+  .to(StockDetailViewModel);
 
 // Session is app-global → singleton (the rare global-VM exception).
 container

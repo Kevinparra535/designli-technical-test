@@ -56,14 +56,19 @@ export const HomeScreen = observer(() => {
       </Text>
 
       <View style={styles.liveCard}>
-        <Text style={styles.liveHeading}>Live prices</Text>
+        <Text style={styles.liveHeading}>Live prices · tap for detail</Text>
         {vm.livePriceList.map(({ symbol, price }) => (
-          <View key={symbol} style={styles.liveRow}>
+          <Pressable
+            key={symbol}
+            onPress={() => navigation.navigate('StockDetail', { symbol })}
+            accessibilityRole="button"
+            style={styles.liveRow}
+          >
             <Text style={styles.liveSymbol}>{symbol}</Text>
             <Text style={styles.livePrice}>
               {price > 0 ? `$${price.toLocaleString()}` : '—'}
             </Text>
-          </View>
+          </Pressable>
         ))}
       </View>
 

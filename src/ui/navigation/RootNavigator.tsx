@@ -11,11 +11,13 @@ import { CreateStockAlertScreen } from '@/ui/screens/CreateStockAlert/CreateStoc
 import { HomeScreen } from '@/ui/screens/Home/HomeScreen';
 import { LoginScreen } from '@/ui/screens/Login/LoginScreen';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
 
 export type RootStackParamList = {
   Login: undefined;
   Home: undefined;
-  CreateStockAlert: undefined;
+  StockDetail: { symbol: string };
+  CreateStockAlert: { symbol?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -48,6 +50,11 @@ export const RootNavigator = observer(() => {
               name="Home"
               component={HomeScreen}
               options={{ title: 'Home', headerBackVisible: false }}
+            />
+            <Stack.Screen
+              name="StockDetail"
+              component={StockDetailScreen}
+              options={{ title: 'Stock detail' }}
             />
             <Stack.Screen
               name="CreateStockAlert"

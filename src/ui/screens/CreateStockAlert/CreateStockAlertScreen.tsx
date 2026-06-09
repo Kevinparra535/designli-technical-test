@@ -8,9 +8,13 @@ import {
   View,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import type { RouteProp } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
+
+import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
 import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
 
@@ -25,6 +29,13 @@ export const CreateStockAlertScreen = observer(() => {
       container.get<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel),
     [],
   );
+
+  // Prefill the symbol when arriving from the stock detail screen.
+  const route = useRoute<RouteProp<RootStackParamList, 'CreateStockAlert'>>();
+  const presetSymbol = route.params?.symbol;
+  useEffect(() => {
+    if (presetSymbol) vm.setSymbol(presetSymbol);
+  }, [vm, presetSymbol]);
 
   // Clear the form state when the screen unmounts.
   useEffect(() => () => vm.reset(), [vm]);

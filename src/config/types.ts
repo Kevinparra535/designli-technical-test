@@ -43,6 +43,7 @@ export const TYPES = {
 
   // domain — useCases
   GetStockListUseCase: Symbol.for('GetStockListUseCase'),
+  GetStockDetailUseCase: Symbol.for('GetStockDetailUseCase'),
   CreateStockAlertUseCase: Symbol.for('CreateStockAlertUseCase'),
   RegisterPushNotificationsUseCase: Symbol.for(
     'RegisterPushNotificationsUseCase',
@@ -55,5 +56,6 @@ export const TYPES = {
   // ui — viewModels
   HomeViewModel: Symbol.for('HomeViewModel'),
   CreateStockAlertViewModel: Symbol.for('CreateStockAlertViewModel'),
+  StockDetailViewModel: Symbol.for('StockDetailViewModel'),
   SessionViewModel: Symbol.for('SessionViewModel'),
 } as const;

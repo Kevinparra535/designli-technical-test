@@ -6,7 +6,9 @@
 // manager. Expressed purely in terms of the Stock entity — no DTOs, no infra.
 
 import { Stock } from '@/domain/entities/Stock';
+import { StockDetail } from '@/domain/entities/StockDetail';
 
 export interface StockService {
   getStockList(exchange?: string): Promise<Stock[]>;
+  getStockDetail(symbol: string): Promise<StockDetail>;
 }
