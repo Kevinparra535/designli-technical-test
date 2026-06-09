@@ -48,7 +48,10 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
   private healthyTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly listeners = new Set<(trades: FinnhubTradeDto[]) => void>();
-  private readonly subscriptions = new Set<string>();
+  // Ref-counted per symbol so independent subscribers (e.g. Home + Detail) can
+  // watch the same symbol; we only tell the server to unsubscribe once the last
+  // subscriber drops it.
+  private readonly subscriptions = new Map<string, number>();
   private readonly logger = new Logger('FinnhubSocketManager');
 
   connect(): void {
@@ -76,7 +79,9 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
         this.reconnectAttempts = 0;
       }, HEALTHY_AFTER);
       // (Re)subscribe everything requested while disconnected.
-      this.subscriptions.forEach((symbol) => this.send('subscribe', symbol));
+      this.subscriptions.forEach((_count, symbol) =>
+        this.send('subscribe', symbol),
+      );
     };
 
     socket.onmessage = (event) => {
@@ -126,11 +131,19 @@ export class FinnhubSocketManagerImpl implements FinnhubSocketManager {
   }
 
   subscribe(symbol: string): void {
-    this.subscriptions.add(symbol);
-    this.send('subscribe', symbol);
+    const count = (this.subscriptions.get(symbol) ?? 0) + 1;
+    this.subscriptions.set(symbol, count);
+    // Only hit the wire the first time a symbol is requested.
+    if (count === 1) this.send('subscribe', symbol);
   }
 
   unsubscribe(symbol: string): void {
+    const count = (this.subscriptions.get(symbol) ?? 0) - 1;
+    if (count > 0) {
+      this.subscriptions.set(symbol, count);
+      return;
+    }
+    // Last subscriber dropped it — release the symbol on the server.
     this.subscriptions.delete(symbol);
     this.send('unsubscribe', symbol);
   }

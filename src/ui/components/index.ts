@@ -10,6 +10,7 @@ export { Field } from './Field';
 export { Icon, type IconName } from './Icon';
 export { Mono } from './Mono';
 export { PressableScale } from './PressableScale';
+export { PriceChart } from './PriceChart';
 export { Segmented, type SegmentOption, type SegmentTone } from './Segmented';
 export { Sparkline } from './Sparkline';
 export { Spinner } from './Spinner';

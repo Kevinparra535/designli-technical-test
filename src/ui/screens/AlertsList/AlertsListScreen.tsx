@@ -1,219 +1,356 @@
 import { useCallback, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { useFocusEffect } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { StockAlert } from '@/domain/entities/StockAlert';
 
+import type {
+  AppTabParamList,
+  RootStackParamList,
+} from '@/ui/navigation/RootNavigator';
+
+import {
+  Appear,
+  Button,
+  Icon,
+  Mono,
+  PressableScale,
+  Spinner,
+  Toast,
+  Txt,
+} from '@/ui/components';
+import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
+
 import { AlertsListViewModel } from './AlertsListViewModel';
+
+type AlertsNavigation = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabParamList, 'Alerts'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
+const fmtUsd0 = (n: number) =>
+  '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+const whenLabel = (createdAt: string | null) => {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+};
 
 export const AlertsListScreen = observer(() => {
   const vm = useMemo(
     () => container.get<AlertsListViewModel>(TYPES.AlertsListViewModel),
     [],
   );
+  const navigation = useNavigation<AlertsNavigation>();
+  const insets = useSafeAreaInsets();
 
-  // Reload whenever the tab gains focus so freshly created alerts show up.
   useFocusEffect(
     useCallback(() => {
       vm.load();
     }, [vm]),
   );
 
-  if (vm.isLoading) {
+  if (vm.isLoading && vm.alerts.length === 0) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={styles.center}>
+        <Spinner size={28} color={colors.up} />
       </View>
     );
   }
 
+  const active = vm.alerts.filter((a) => a.active);
+  const paused = vm.alerts.filter((a) => !a.active);
+  const toastTone = vm.testMessage?.startsWith('Test sent') ? 'up' : 'warn';
+
   return (
-    <FlatList
-      contentContainerStyle={styles.listContent}
-      data={vm.alerts}
-      keyExtractor={(item) => item.id}
-      refreshControl={
-        <RefreshControl
-          refreshing={vm.isRefreshing}
-          onRefresh={() => vm.refresh()}
-        />
-      }
-      ListHeaderComponent={
-        <>
-          {vm.error ? <Text style={styles.error}>{vm.error}</Text> : null}
-          {vm.testMessage ? (
-            <Pressable onPress={() => vm.clearTestMessage()}>
-              <Text style={styles.banner}>{vm.testMessage} ✕</Text>
-            </Pressable>
-          ) : null}
-        </>
-      }
-      ListEmptyComponent={
-        vm.isEmpty ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No alerts yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Create a price alert and it will appear here.
-            </Text>
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.sm },
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={vm.isRefreshing}
+            onRefresh={() => vm.refresh()}
+            tintColor={colors.ink2}
+          />
+        }
+      >
+        {/* header */}
+        <Appear>
+          <Txt variant="title">Alertas</Txt>
+          <Txt variant="caption" color="ink3" style={styles.subtitle}>
+            {vm.alerts.length} {vm.alerts.length === 1 ? 'regla' : 'reglas'}
+          </Txt>
+        </Appear>
+
+        {vm.error ? (
+          <Txt variant="caption" color="down" style={styles.error}>
+            {vm.error}
+          </Txt>
+        ) : null}
+
+        {vm.isEmpty ? (
+          <Appear index={1} style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <Icon name="bell" size={32} color={colors.ink3} />
+            </View>
+            <Txt variant="headline" align="center">
+              Sin alertas todavía
+            </Txt>
+            <Txt
+              variant="body"
+              color="ink2"
+              align="center"
+              style={styles.emptyCopy}
+            >
+              Crea tu primera alerta desde cualquier acción y te avisamos cuando
+              cruce tu precio.
+            </Txt>
+            <View style={styles.emptyBtn}>
+              <Button
+                label="Explorar mercado"
+                variant="secondary"
+                size="md"
+                onPress={() => navigation.navigate('Home')}
+                leading={<Icon name="plus" size={18} color={colors.ink} />}
+              />
+            </View>
+          </Appear>
+        ) : (
+          <View style={styles.sections}>
+            {active.length > 0 ? (
+              <Section label="Activas" alerts={active} vm={vm} startIndex={1} />
+            ) : null}
+            {paused.length > 0 ? (
+              <Section
+                label="Pausadas"
+                alerts={paused}
+                vm={vm}
+                startIndex={active.length + 2}
+              />
+            ) : null}
           </View>
-        ) : null
-      }
-      renderItem={({ item }) => (
-        <AlertRow
-          alert={item}
-          deleting={vm.deletingId === item.id}
-          testing={vm.testingId === item.id}
-          onDelete={() => vm.delete(item.id)}
-          onTest={() => vm.test(item.id)}
+        )}
+      </ScrollView>
+
+      {vm.testMessage ? (
+        <Toast
+          message={vm.testMessage}
+          tone={toastTone}
+          icon={
+            <Icon
+              name="check"
+              size={17}
+              color={toastTone === 'up' ? colors.up : colors.warn}
+            />
+          }
+          onHide={() => vm.clearTestMessage()}
         />
-      )}
-    />
+      ) : null}
+    </View>
   );
 });
 
-const AlertRow = observer(
-  ({
-    alert,
-    deleting,
-    testing,
-    onDelete,
-    onTest,
-  }: {
-    alert: StockAlert;
-    deleting: boolean;
-    testing: boolean;
-    onDelete: () => void;
-    onTest: () => void;
-  }) => {
-    const isAbove = alert.condition === 'above';
-    const busy = deleting || testing;
-    return (
-      <View style={styles.row}>
-        <View style={styles.rowMain}>
-          <Text style={styles.symbol}>{alert.symbol}</Text>
-          <Text style={styles.condition}>
-            <Text style={isAbove ? styles.above : styles.below}>
-              {isAbove ? 'Above ▲' : 'Below ▼'}
-            </Text>
-            {`  $${alert.targetPrice.toLocaleString()}`}
-          </Text>
-        </View>
-
-        <View style={styles.rowActions}>
-          <Pressable
-            onPress={onTest}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={`Send a test notification for ${alert.symbol}`}
-            style={[styles.testBtn, busy && styles.btnDisabled]}
-            hitSlop={8}
-          >
-            {testing ? (
-              <ActivityIndicator size="small" color="#2563EB" />
-            ) : (
-              <Text style={styles.testText}>Test 🔔</Text>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={onDelete}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={`Delete ${alert.symbol} alert`}
-            style={[styles.deleteBtn, busy && styles.btnDisabled]}
-            hitSlop={8}
-          >
-            {deleting ? (
-              <ActivityIndicator size="small" color="#DC2626" />
-            ) : (
-              <Text style={styles.deleteText}>Delete</Text>
-            )}
-          </Pressable>
-        </View>
-      </View>
-    );
-  },
+const Section = ({
+  label,
+  alerts,
+  vm,
+  startIndex,
+}: {
+  label: string;
+  alerts: StockAlert[];
+  vm: AlertsListViewModel;
+  startIndex: number;
+}) => (
+  <View style={styles.section}>
+    <Txt variant="label" style={styles.sectionLabel}>
+      {label}
+    </Txt>
+    {alerts.map((a, i) => (
+      <Appear key={a.id} index={startIndex + i}>
+        <AlertRowItem
+          alert={a}
+          testing={vm.testingId === a.id}
+          deleting={vm.deletingId === a.id}
+          onTest={() => vm.test(a.id)}
+          onDelete={() => vm.delete(a.id)}
+        />
+      </Appear>
+    ))}
+  </View>
 );
 
+const AlertRowItem = ({
+  alert,
+  testing,
+  deleting,
+  onTest,
+  onDelete,
+}: {
+  alert: StockAlert;
+  testing: boolean;
+  deleting: boolean;
+  onTest: () => void;
+  onDelete: () => void;
+}) => {
+  const isAbove = alert.condition === 'above';
+  const busy = testing || deleting;
+  const when = whenLabel(alert.createdAt ?? null);
+
+  return (
+    <View style={[styles.row, !alert.active && styles.rowPaused]}>
+      <Mono symbol={alert.symbol} size={42} />
+
+      <View style={styles.rowMain}>
+        <View style={styles.rowTop}>
+          <Txt variant="bodyStrong">{alert.symbol}</Txt>
+          <View
+            style={[
+              styles.badge,
+              {
+                backgroundColor: alert.active ? colors.upDim : colors.bg4,
+              },
+            ]}
+          >
+            <Txt
+              variant="label"
+              style={{ color: alert.active ? colors.up : colors.ink3 }}
+            >
+              {alert.active ? 'Activa' : 'Pausada'}
+            </Txt>
+          </View>
+        </View>
+
+        <View style={styles.condRow}>
+          <Icon
+            name={isAbove ? 'arrowUp' : 'arrowDown'}
+            size={12}
+            color={colors.ink3}
+          />
+          <Txt variant="caption" color="ink2">
+            {isAbove ? 'Sube de' : 'Baja de'}
+          </Txt>
+          <Txt variant="price" color="ink2" style={styles.condPrice}>
+            {fmtUsd0(alert.targetPrice)}
+          </Txt>
+          {when ? (
+            <>
+              <Txt variant="caption" color="ink4">
+                ·
+              </Txt>
+              <Txt variant="caption" color="ink3">
+                {when}
+              </Txt>
+            </>
+          ) : null}
+        </View>
+      </View>
+
+      <PressableScale
+        onPress={onTest}
+        disabled={busy}
+        style={[styles.iconBtn, busy && styles.iconBtnDisabled]}
+        accessibilityRole="button"
+        accessibilityLabel={`Probar alerta de ${alert.symbol}`}
+      >
+        {testing ? (
+          <Spinner size={15} color={colors.ink2} />
+        ) : (
+          <Icon name="bell" size={15} color={colors.ink2} />
+        )}
+      </PressableScale>
+
+      <PressableScale
+        onPress={onDelete}
+        disabled={busy}
+        style={[styles.iconBtn, busy && styles.iconBtnDisabled]}
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar alerta de ${alert.symbol}`}
+      >
+        {deleting ? (
+          <Spinner size={15} color={colors.down} />
+        ) : (
+          <Icon name="trash" size={15} color={colors.down} />
+        )}
+      </PressableScale>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 16, gap: 12, flexGrow: 1 },
-  error: { color: '#DC2626', fontSize: 14, marginBottom: 8 },
-  banner: {
-    color: '#1E40AF',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  empty: {
+  screen: { flex: 1, backgroundColor: colors.bg },
+  center: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: colors.bg,
     alignItems: 'center',
-    paddingTop: 80,
-    gap: 8,
+    justifyContent: 'center',
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  emptySubtitle: { fontSize: 14, color: '#64748B', textAlign: 'center' },
+  content: { paddingHorizontal: 20, paddingBottom: 32 },
+  subtitle: { marginTop: 2 },
+  error: { marginTop: spacing.md },
+  sections: { marginTop: spacing.lg, gap: 22 },
+  section: { gap: 10 },
+  sectionLabel: { marginLeft: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.md,
+    padding: 14,
+    backgroundColor: colors.bg2,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.hair,
+    borderRadius: radii.md,
   },
-  rowMain: { gap: 4, flex: 1 },
-  rowActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  symbol: { fontSize: 17, fontWeight: '700', color: '#0F172A' },
-  condition: {
-    fontSize: 14,
-    color: '#334155',
-    fontVariant: ['tabular-nums'],
+  rowPaused: { opacity: 0.62 },
+  rowMain: { flex: 1, minWidth: 0, gap: 3 },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  badge: {
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: radii.pill,
   },
-  above: { color: '#16A34A', fontWeight: '700' },
-  below: { color: '#DC2626', fontWeight: '700' },
-  testBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  condRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  condPrice: { fontSize: 12.5 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    minWidth: 72,
+    borderColor: colors.hair,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  testText: { color: '#2563EB', fontSize: 14, fontWeight: '600' },
-  deleteBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
-    minWidth: 72,
+  iconBtnDisabled: { opacity: 0.5 },
+  empty: {
     alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 12,
+    gap: spacing.sm,
   },
-  btnDisabled: { opacity: 0.5 },
-  deleteText: { color: '#DC2626', fontSize: 14, fontWeight: '600' },
+  emptyIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg2,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  emptyCopy: { marginTop: 2 },
+  emptyBtn: { marginTop: spacing.lg },
 });

@@ -5,11 +5,26 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0C0F",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0C0F"
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0A0C0F"
+    },
+    "androidNavigationBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0A0C0F"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kevcoder.designlitechnicaltest",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "userInterfaceStyle": "dark",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -17,6 +32,8 @@
     "android": {
       "package": "com.kevcoder.designlitechnicaltest",
       "googleServicesFile": "./google-services.json",
+      "userInterfaceStyle": "dark",
+      "backgroundColor": "#0A0C0F",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -28,11 +45,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-notifications",
-      "expo-secure-store",
-      "expo-font"
-    ],
+    "plugins": ["expo-notifications", "expo-secure-store", "expo-font"],
     "extra": {
       "eas": {
         "projectId": "b3063856-6aed-4ebe-82ff-1eeb87455547"

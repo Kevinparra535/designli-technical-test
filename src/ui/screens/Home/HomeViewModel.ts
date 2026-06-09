@@ -6,6 +6,7 @@ import { TYPES } from '@/config/types';
 import { Stock } from '@/domain/entities/Stock';
 import { Trade } from '@/domain/entities/Trade';
 
+import { GetStockDetailUseCase } from '@/domain/useCases/GetStockDetailUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
@@ -14,15 +15,37 @@ import Logger from '@/ui/utils/Logger';
 
 type ICalls = 'init';
 
-// Symbols watched for live prices. Crypto trades 24/7, so the demo shows live
-// data even when the US stock market is closed.
-const PRICE_WATCHLIST = [
-  'AAPL',
-  'MSFT',
-  'AMZN',
-  'BINANCE:BTCUSDT',
-  'BINANCE:ETHUSDT',
+const MAX_POINTS = 40;
+
+// Watched symbols. Crypto (BINANCE:*) trades 24/7 so the demo stays live even
+// when the US market is closed. `symbol` is the Finnhub/websocket id.
+const WATCHLIST = [
+  { symbol: 'AAPL', displaySymbol: 'AAPL', name: 'Apple Inc' },
+  { symbol: 'MSFT', displaySymbol: 'MSFT', name: 'Microsoft Corp' },
+  { symbol: 'NVDA', displaySymbol: 'NVDA', name: 'NVIDIA Corp' },
+  { symbol: 'AMZN', displaySymbol: 'AMZN', name: 'Amazon.com Inc' },
+  { symbol: 'TSLA', displaySymbol: 'TSLA', name: 'Tesla Inc' },
+  { symbol: 'META', displaySymbol: 'META', name: 'Meta Platforms' },
+  { symbol: 'GOOGL', displaySymbol: 'GOOGL', name: 'Alphabet Inc' },
+  { symbol: 'AMD', displaySymbol: 'AMD', name: 'Adv. Micro Devices' },
+  { symbol: 'COIN', displaySymbol: 'COIN', name: 'Coinbase Global' },
+  { symbol: 'NFLX', displaySymbol: 'NFLX', name: 'Netflix Inc' },
+  { symbol: 'BINANCE:BTCUSDT', displaySymbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'BINANCE:ETHUSDT', displaySymbol: 'ETH', name: 'Ethereum' },
 ];
+const WATCH_SYMBOLS = WATCHLIST.map((w) => w.symbol);
+const isCrypto = (symbol: string) => symbol.includes(':');
+
+type QuoteSnap = { previousClose: number; open: number; current: number };
+
+export type MarketRow = {
+  symbol: string;
+  displaySymbol: string;
+  name: string;
+  price: number;
+  pct: number;
+  history: number[];
+};
 
 @injectable()
 export class HomeViewModel {
@@ -30,8 +53,16 @@ export class HomeViewModel {
   isInitError: string | null = null;
   stocks: Stock[] = [];
 
-  /** Latest price per watched symbol, updated live from the websocket. */
+  /** Latest price per watched symbol (live from the websocket). */
   livePrices = new Map<string, number>();
+  /** REST quote snapshot per stock (daily reference: prev close / open). */
+  private quotes = new Map<string, QuoteSnap>();
+  /** First price seen per symbol — % baseline when there's no REST quote. */
+  private sessionBase = new Map<string, number>();
+  /** Rolling per-symbol history that feeds each row's sparkline. */
+  private priceHistory = new Map<string, number[]>();
+  /** Rolling sum-of-watchlist history that feeds the header sparkline. */
+  aggregateHistory: number[] = [];
 
   private logger = new Logger('HomeViewModel');
   private priceTeardown: (() => void) | null = null;
@@ -39,6 +70,8 @@ export class HomeViewModel {
   constructor(
     @inject(TYPES.GetStockListUseCase)
     private readonly getStockListUseCase: GetStockListUseCase,
+    @inject(TYPES.GetStockDetailUseCase)
+    private readonly getStockDetailUseCase: GetStockDetailUseCase,
     @inject(TYPES.RegisterPushNotificationsUseCase)
     private readonly registerPushNotificationsUseCase: RegisterPushNotificationsUseCase,
     @inject(TYPES.SubscribeToPricesUseCase)
@@ -47,32 +80,67 @@ export class HomeViewModel {
     makeAutoObservable(this);
   }
 
-  /** Watched symbols with their latest live price, for rendering. */
-  get livePriceList(): { symbol: string; price: number }[] {
-    return PRICE_WATCHLIST.map((symbol) => ({
-      symbol,
-      price: this.livePrices.get(symbol) ?? 0,
-    }));
+  // ── Computed ─────────────────────────────────────────────────────────────────
+
+  get rows(): MarketRow[] {
+    return WATCHLIST.map((w) => {
+      const quote = this.quotes.get(w.symbol);
+      const price = this.livePrices.get(w.symbol) ?? quote?.current ?? 0;
+      let pct = 0;
+      if (quote && quote.previousClose > 0) {
+        pct = ((price - quote.previousClose) / quote.previousClose) * 100;
+      } else {
+        const base = this.sessionBase.get(w.symbol);
+        pct = base && base > 0 ? ((price - base) / base) * 100 : 0;
+      }
+      return {
+        symbol: w.symbol,
+        displaySymbol: w.displaySymbol,
+        name: w.name,
+        price,
+        pct,
+        history: this.priceHistory.get(w.symbol) ?? [],
+      };
+    });
   }
+
+  get movers(): MarketRow[] {
+    return [...this.rows].sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+  }
+
+  get totalValue(): number {
+    return this.rows.reduce((sum, r) => sum + r.price, 0);
+  }
+
+  get totalPct(): number {
+    let baseSum = 0;
+    let curSum = 0;
+    for (const w of WATCHLIST) {
+      const quote = this.quotes.get(w.symbol);
+      const price = this.livePrices.get(w.symbol) ?? quote?.current ?? 0;
+      const base = quote?.previousClose ?? this.sessionBase.get(w.symbol) ?? 0;
+      if (base > 0 && price > 0) {
+        baseSum += base;
+        curSum += price;
+      }
+    }
+    return baseSum > 0 ? ((curSum - baseSum) / baseSum) * 100 : 0;
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────────
 
   async initialize(): Promise<void> {
     this.updateLoadingState(true, null, 'init');
     try {
       const stocks = await this.getStockListUseCase.run();
-
       runInAction(() => {
         this.stocks = stocks;
       });
-
-      // Solo consola por ahora: cantidad + una muestra de los primeros 10.
       this.logger.info(`Stock list fetched: ${stocks.length} symbols`);
-      this.logger.info('Sample (first 10):', stocks.slice(0, 10));
 
-      // Register this device for FCM price-alert pushes. Non-blocking: a backend
-      // that is down must not break the screen. (Ideally moves to post-login.)
+      // Non-blocking side effects — never break the screen if they fail.
+      void this.loadQuotes();
       void this.registerForPushNotifications();
-
-      // Open the realtime price feed for the watchlist.
       void this.subscribeToLivePrices();
 
       this.updateLoadingState(false, null, 'init');
@@ -81,15 +149,48 @@ export class HomeViewModel {
     }
   }
 
+  dispose(): void {
+    this.priceTeardown?.();
+    this.priceTeardown = null;
+  }
+
+  // ── Private ──────────────────────────────────────────────────────────────────
+
+  /** Seed real prices + daily change for the (non-crypto) stocks. */
+  private async loadQuotes(): Promise<void> {
+    const stockSymbols = WATCH_SYMBOLS.filter((s) => !isCrypto(s));
+    await Promise.allSettled(
+      stockSymbols.map(async (symbol) => {
+        try {
+          const detail = await this.getStockDetailUseCase.run(symbol);
+          const q = detail.quote;
+          if (q.current > 0) {
+            runInAction(() => {
+              this.quotes.set(symbol, {
+                previousClose: q.previousClose,
+                open: q.open,
+                current: q.current,
+              });
+              if (!this.priceHistory.has(symbol)) {
+                this.priceHistory.set(
+                  symbol,
+                  [q.previousClose, q.open, q.current].filter((v) => v > 0),
+                );
+              }
+            });
+          }
+        } catch {
+          // Ignore individual quote failures (rate limits / closed market).
+        }
+      }),
+    );
+  }
+
   private async subscribeToLivePrices(): Promise<void> {
     try {
       this.priceTeardown = await this.subscribeToPricesUseCase.run({
-        symbols: PRICE_WATCHLIST,
-        onTrade: (trade: Trade) => {
-          runInAction(() => {
-            this.livePrices.set(trade.symbol, trade.price);
-          });
-        },
+        symbols: WATCH_SYMBOLS,
+        onTrade: (trade: Trade) => this.onTrade(trade),
       });
     } catch (error) {
       this.logger.error(
@@ -100,10 +201,29 @@ export class HomeViewModel {
     }
   }
 
-  /** Tear down the realtime subscription. Call on screen unmount. */
-  dispose(): void {
-    this.priceTeardown?.();
-    this.priceTeardown = null;
+  private onTrade(trade: Trade): void {
+    runInAction(() => {
+      this.livePrices.set(trade.symbol, trade.price);
+      if (!this.sessionBase.has(trade.symbol)) {
+        this.sessionBase.set(trade.symbol, trade.price);
+      }
+      const prev = this.priceHistory.get(trade.symbol) ?? [];
+      this.priceHistory.set(
+        trade.symbol,
+        [...prev, trade.price].slice(-MAX_POINTS),
+      );
+
+      let total = 0;
+      for (const w of WATCHLIST) {
+        total +=
+          this.livePrices.get(w.symbol) ??
+          this.quotes.get(w.symbol)?.current ??
+          0;
+      }
+      this.aggregateHistory = [...this.aggregateHistory, total].slice(
+        -MAX_POINTS,
+      );
+    });
   }
 
   private async registerForPushNotifications(): Promise<void> {

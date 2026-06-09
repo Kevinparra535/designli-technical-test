@@ -1,13 +1,6 @@
-import { useEffect, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,20 +11,42 @@ import { TYPES } from '@/config/types';
 
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
+import {
+  Appear,
+  Button,
+  Delta,
+  Icon,
+  Mono,
+  PressableScale,
+  PriceChart,
+  Spinner,
+  Txt,
+} from '@/ui/components';
+import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
+
 import { StockDetailViewModel } from './StockDetailViewModel';
 
 type DetailNavigation = NativeStackNavigationProp<
   RootStackParamList,
   'StockDetail'
 >;
-type DetailRoute = RouteProp<RootStackParamList, 'StockDetail'>;
 
-const Row = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.row}>
-    <Text style={styles.rowLabel}>{label}</Text>
-    <Text style={styles.rowValue}>{value}</Text>
-  </View>
-);
+const RANGES = ['1H', '1D', '1S', '1M', '1A', 'Máx'] as const;
+
+const fmtUsd = (n: number, d = 2) =>
+  '$' +
+  n.toLocaleString('en-US', {
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  });
+
+const fmtSigned = (n: number) =>
+  (n >= 0 ? '+' : '−') + '$' + Math.abs(n).toFixed(2);
+
+const displayOf = (symbol: string) =>
+  symbol.includes(':')
+    ? (symbol.split(':')[1] ?? symbol).replace('USDT', '')
+    : symbol;
 
 export const StockDetailScreen = observer(() => {
   const vm = useMemo(
@@ -39,139 +54,288 @@ export const StockDetailScreen = observer(() => {
     [],
   );
   const navigation = useNavigation<DetailNavigation>();
-  const { symbol } = useRoute<DetailRoute>().params;
+  const route = useRoute<RouteProp<RootStackParamList, 'StockDetail'>>();
+  const insets = useSafeAreaInsets();
+  const symbol = route.params.symbol;
+  const [range, setRange] = useState<(typeof RANGES)[number]>('1D');
 
   useEffect(() => {
     vm.load(symbol);
+    return () => vm.dispose();
   }, [vm, symbol]);
 
-  if (vm.isLoading && !vm.detail) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  if (vm.error && !vm.detail) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>Error: {vm.error}</Text>
-      </View>
-    );
-  }
-
-  const detail = vm.detail;
-  const quote = detail?.quote;
-  const profile = detail?.profile;
-  const changeColor = vm.isUp ? '#16A34A' : '#DC2626';
-  const sign = vm.isUp ? '+' : '';
+  const display = displayOf(symbol);
+  const goCreateAlert = () =>
+    navigation.navigate('CreateStockAlert', { symbol });
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.symbol}>{symbol}</Text>
-      {profile?.name ? <Text style={styles.name}>{profile.name}</Text> : null}
-
-      {quote ? (
-        <View style={styles.priceBlock}>
-          <Text style={styles.price}>${quote.current.toLocaleString()}</Text>
-          <Text style={[styles.change, { color: changeColor }]}>
-            {sign}
-            {quote.change.toFixed(2)} ({sign}
-            {quote.percentChange.toFixed(2)}%)
-          </Text>
+    <View style={styles.screen}>
+      {/* nav */}
+      <View style={[styles.nav, { paddingTop: insets.top + 4 }]}>
+        <PressableScale
+          onPress={() => navigation.goBack()}
+          style={styles.navBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Volver"
+        >
+          <Icon name="chevL" size={20} color={colors.ink} />
+        </PressableScale>
+        <View style={styles.navTitle}>
+          <Mono symbol={display} size={26} />
+          <Txt variant="headline">{display}</Txt>
         </View>
-      ) : null}
-
-      {quote ? (
-        <View style={styles.card}>
-          <Text style={styles.cardHeading}>Today</Text>
-          <Row label="Open" value={`$${quote.open.toLocaleString()}`} />
-          <Row label="High" value={`$${quote.high.toLocaleString()}`} />
-          <Row label="Low" value={`$${quote.low.toLocaleString()}`} />
-          <Row
-            label="Prev. close"
-            value={`$${quote.previousClose.toLocaleString()}`}
-          />
+        <View style={styles.navBtn}>
+          <Icon name="search" size={18} color={colors.ink2} />
         </View>
-      ) : null}
+      </View>
 
-      {profile && (profile.exchange || profile.marketCapitalization > 0) ? (
-        <View style={styles.card}>
-          <Text style={styles.cardHeading}>Company</Text>
-          {profile.exchange ? (
-            <Row label="Exchange" value={profile.exchange} />
-          ) : null}
-          {profile.currency ? (
-            <Row label="Currency" value={profile.currency} />
-          ) : null}
-          {profile.country ? (
-            <Row label="Country" value={profile.country} />
-          ) : null}
-          {profile.marketCapitalization > 0 ? (
-            <Row
-              label="Market cap"
-              value={`$${Math.round(profile.marketCapitalization).toLocaleString()} M`}
-            />
-          ) : null}
-          {profile.weburl ? (
-            <Pressable onPress={() => Linking.openURL(profile.weburl)}>
-              <Text style={styles.link}>{profile.weburl}</Text>
-            </Pressable>
-          ) : null}
+      {vm.isLoading ? (
+        <View style={styles.center}>
+          <Spinner size={28} color={colors.up} />
         </View>
-      ) : null}
+      ) : vm.error ? (
+        <View style={styles.center}>
+          <Txt variant="body" color="down" align="center">
+            {vm.error}
+          </Txt>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* price */}
+          <Appear>
+            <View style={styles.priceBlock}>
+              <Txt variant="caption" color="ink3">
+                {vm.profile?.name || display}
+                {vm.profile?.exchange ? ` · ${vm.profile.exchange}` : ''}
+              </Txt>
+              <Txt variant="displayMono" style={styles.bigPrice}>
+                {vm.priceAvailable ? fmtUsd(vm.price) : '—'}
+              </Txt>
+              {vm.priceAvailable ? (
+                <View style={styles.changeRow}>
+                  <Delta pct={vm.percentChange} />
+                  <Txt
+                    style={{
+                      fontFamily: fonts.mono.semibold,
+                      fontSize: 13,
+                      color: vm.isUp ? colors.up : colors.down,
+                    }}
+                  >
+                    {`${fmtSigned(vm.changeValue)} ${
+                      vm.hasQuote ? 'hoy' : 'en la sesión'
+                    }`}
+                  </Txt>
+                </View>
+              ) : (
+                <Txt variant="caption" color="ink3" style={styles.noData}>
+                  Esperando datos en vivo para este símbolo…
+                </Txt>
+              )}
+            </View>
+          </Appear>
 
-      <Pressable
-        onPress={() => navigation.navigate('CreateStockAlert', { symbol })}
-        accessibilityRole="button"
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Create price alert</Text>
-      </Pressable>
-    </ScrollView>
+          {/* chart (real intraday trajectory from the quote) */}
+          {vm.series.length >= 2 ? (
+            <Appear index={1} style={styles.chart}>
+              <PriceChart
+                data={vm.series}
+                up={vm.isUp}
+                target={vm.alert?.targetPrice ?? null}
+                height={200}
+              />
+            </Appear>
+          ) : null}
+
+          {/* range selector */}
+          {vm.hasQuote ? (
+            <Appear index={2} style={styles.ranges}>
+              {RANGES.map((r) => {
+                const on = r === range;
+                return (
+                  <PressableScale
+                    key={r}
+                    onPress={() => setRange(r)}
+                    scaleTo={0.94}
+                    style={[styles.range, on && styles.rangeOn]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                  >
+                    <Txt
+                      style={{
+                        fontFamily: fonts.mono.bold,
+                        fontSize: 12.5,
+                        color: on ? colors.ink : colors.ink3,
+                      }}
+                    >
+                      {r}
+                    </Txt>
+                  </PressableScale>
+                );
+              })}
+            </Appear>
+          ) : null}
+
+          {/* stats */}
+          {vm.hasQuote && vm.quote ? (
+            <Appear index={3} style={styles.statsWrap}>
+              <View style={styles.stats}>
+                <StatCell label="Apertura" value={fmtUsd(vm.quote.open)} />
+                <StatCell label="Máx día" value={fmtUsd(vm.quote.high)} />
+                <StatCell label="Mín día" value={fmtUsd(vm.quote.low)} />
+                <StatCell
+                  label="Cierre ant."
+                  value={fmtUsd(vm.quote.previousClose)}
+                />
+              </View>
+            </Appear>
+          ) : null}
+
+          {/* alert CTA */}
+          <Appear index={4} style={styles.cta}>
+            {vm.alert ? (
+              <View style={styles.alertCard}>
+                <View style={styles.alertIcon}>
+                  <Icon name="bell" size={19} color={colors.warn} />
+                </View>
+                <View style={styles.alertText}>
+                  <Txt variant="bodyStrong">Alerta activa</Txt>
+                  <Txt variant="caption" color="ink2">
+                    {`Te avisamos ${
+                      vm.alert.condition === 'above'
+                        ? 'al subir de'
+                        : 'al bajar de'
+                    } ${fmtUsd(vm.alert.targetPrice, 0)}`}
+                  </Txt>
+                </View>
+                <PressableScale
+                  onPress={goCreateAlert}
+                  scaleTo={0.95}
+                  accessibilityRole="button"
+                >
+                  <Txt
+                    variant="caption"
+                    color="warn"
+                    style={{ fontFamily: fonts.sans.bold }}
+                  >
+                    Editar
+                  </Txt>
+                </PressableScale>
+              </View>
+            ) : (
+              <Button
+                label="Crear alerta de precio"
+                onPress={goCreateAlert}
+                leading={
+                  <Icon name="bellPlus" size={20} color={colors.upInk} />
+                }
+                full
+              />
+            )}
+          </Appear>
+        </ScrollView>
+      )}
+    </View>
   );
 });
 
+const StatCell = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.statCell}>
+    <Txt variant="caption" color="ink3">
+      {label}
+    </Txt>
+    <Txt variant="price" style={styles.statValue}>
+      {value}
+    </Txt>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  error: { color: '#DC2626' },
-  container: { padding: 24, gap: 16 },
-  symbol: { fontSize: 28, fontWeight: '800', color: '#0F172A' },
-  name: { fontSize: 15, color: '#64748B', marginTop: -8 },
-  priceBlock: { gap: 4 },
-  price: { fontSize: 34, fontWeight: '700', color: '#0F172A' },
-  change: { fontSize: 16, fontWeight: '600' },
-  card: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-  },
-  cardHeading: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  rowLabel: { fontSize: 14, color: '#64748B' },
-  rowValue: {
-    fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
-  link: { fontSize: 14, color: '#2563EB' },
-  button: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 16,
+  screen: { flex: 1, backgroundColor: colors.bg },
+  center: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
+    padding: 24,
   },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  nav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+  },
+  navBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg2,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  content: { paddingBottom: 32 },
+  priceBlock: { paddingHorizontal: 20, paddingTop: spacing.sm },
+  bigPrice: { fontSize: 40, letterSpacing: -1.4, marginTop: 4 },
+  changeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  noData: { marginTop: spacing.sm },
+  chart: { paddingHorizontal: 12, paddingTop: spacing.md },
+  ranges: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 20,
+    marginTop: spacing.md,
+  },
+  range: {
+    flex: 1,
+    height: 34,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rangeOn: { backgroundColor: colors.bg4 },
+  statsWrap: { paddingHorizontal: 20, marginTop: spacing.md },
+  stats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    overflow: 'hidden',
+  },
+  statCell: {
+    width: '50%',
+    padding: 13,
+    backgroundColor: colors.bg,
+    borderColor: colors.hair,
+    borderWidth: 0.5,
+  },
+  statValue: { marginTop: 3 },
+  cta: { paddingHorizontal: 20, marginTop: spacing.lg },
+  alertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: 16,
+    borderRadius: radii.md,
+    backgroundColor: colors.warnDim,
+  },
+  alertIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.pill,
+    backgroundColor: colors.warnDim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertText: { flex: 1, gap: 1 },
 });

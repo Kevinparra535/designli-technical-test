@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { CompositeNavigationProp } from '@react-navigation/native';
@@ -14,14 +15,39 @@ import type {
   RootStackParamList,
 } from '@/ui/navigation/RootNavigator';
 
+import {
+  Appear,
+  Delta,
+  Icon,
+  Mono,
+  PressableScale,
+  Sparkline,
+  Spinner,
+  Txt,
+} from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
 
-import { HomeViewModel } from './HomeViewModel';
+import { HomeViewModel, type MarketRow } from './HomeViewModel';
 
 type HomeNavigation = CompositeNavigationProp<
   BottomTabNavigationProp<AppTabParamList, 'Home'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
+
+type Tab = 'watch' | 'movers';
+
+const fmtUsd = (n: number) =>
+  '$' +
+  n.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const greeting = (email?: string) => {
+  const name = email ? email.split('@')[0] : '';
+  return name ? `Hola, ${name}` : 'Hola';
+};
 
 export const HomeScreen = observer(() => {
   const vm = useMemo(
@@ -33,6 +59,8 @@ export const HomeScreen = observer(() => {
     [],
   );
   const navigation = useNavigation<HomeNavigation>();
+  const insets = useSafeAreaInsets();
+  const [tab, setTab] = useState<Tab>('watch');
 
   useEffect(() => {
     vm.initialize();
@@ -41,117 +69,238 @@ export const HomeScreen = observer(() => {
 
   if (vm.isInitLoading) {
     return (
-      <View style={styles.centered}>
-        <Text>Loading...</Text>
+      <View style={styles.center}>
+        <Spinner size={28} color={colors.up} />
       </View>
     );
   }
 
-  if (vm.isInitError) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>Error: {vm.isInitError}</Text>
-      </View>
-    );
-  }
+  const rows = tab === 'watch' ? vm.rows : vm.movers;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        {session.currentUser
-          ? `Welcome, ${session.currentUser.email}`
-          : 'Welcome to Home!'}
-      </Text>
-
-      <View style={styles.liveCard}>
-        <Text style={styles.liveHeading}>Live prices · tap for detail</Text>
-        {vm.livePriceList.map(({ symbol, price }) => (
-          <Pressable
-            key={symbol}
-            onPress={() => navigation.navigate('StockDetail', { symbol })}
-            accessibilityRole="button"
-            style={styles.liveRow}
-          >
-            <Text style={styles.liveSymbol}>{symbol}</Text>
-            <Text style={styles.livePrice}>
-              {price > 0 ? `$${price.toLocaleString()}` : '—'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Pressable
-        onPress={() => navigation.navigate('CreateStockAlert')}
-        accessibilityRole="button"
-        style={styles.button}
+    <View style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.sm },
+        ]}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.buttonText}>Create price alert</Text>
-      </Pressable>
+        {/* header */}
+        <Appear>
+          <View style={styles.header}>
+            <View>
+              <Txt variant="caption" color="ink3">
+                {greeting(session.currentUser?.email)}
+              </Txt>
+              <Txt variant="title" style={styles.h1}>
+                Mercado
+              </Txt>
+            </View>
+            <PressableScale
+              onPress={() => navigation.navigate('Alerts')}
+              style={styles.bell}
+              accessibilityRole="button"
+              accessibilityLabel="Ver alertas"
+            >
+              <Icon name="bell" size={21} color={colors.ink} />
+              <View style={styles.bellDot} />
+            </PressableScale>
+          </View>
+        </Appear>
 
-      <Pressable
-        onPress={() => session.signOut()}
-        accessibilityRole="button"
-        style={styles.secondaryButton}
-      >
-        <Text style={styles.secondaryButtonText}>Sign out</Text>
-      </Pressable>
+        {/* hero card */}
+        <Appear index={1}>
+          <View style={styles.card}>
+            <Txt variant="caption" color="ink3">
+              Valor de seguimiento
+            </Txt>
+            <View style={styles.cardRow}>
+              <View>
+                <Txt variant="displayMono">
+                  {vm.totalValue > 0 ? fmtUsd(vm.totalValue) : '—'}
+                </Txt>
+                <View style={styles.cardDelta}>
+                  <Delta pct={vm.totalPct} size="sm" />
+                  <Txt variant="caption" color="ink3">
+                    hoy
+                  </Txt>
+                </View>
+              </View>
+              <Sparkline
+                data={vm.aggregateHistory}
+                up={vm.totalPct >= 0}
+                width={96}
+                height={48}
+                strokeWidth={2.2}
+              />
+            </View>
+          </View>
+        </Appear>
+
+        {/* tabs */}
+        <Appear index={2} style={styles.tabs}>
+          {(
+            [
+              ['watch', 'Seguimiento'],
+              ['movers', 'Más activos'],
+            ] as const
+          ).map(([id, label]) => {
+            const on = tab === id;
+            return (
+              <PressableScale
+                key={id}
+                onPress={() => setTab(id)}
+                scaleTo={0.96}
+                style={[styles.tab, on && styles.tabActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+              >
+                <Txt
+                  style={{
+                    fontFamily: fonts.sans.bold,
+                    fontSize: 15,
+                    color: on ? colors.ink : colors.ink3,
+                  }}
+                >
+                  {label}
+                </Txt>
+              </PressableScale>
+            );
+          })}
+        </Appear>
+
+        {/* list */}
+        <View style={styles.list}>
+          {rows.map((r, i) => (
+            <Appear key={r.symbol} index={3 + i}>
+              <MarketRowItem
+                row={r}
+                onPress={() =>
+                  navigation.navigate('StockDetail', { symbol: r.symbol })
+                }
+              />
+            </Appear>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 });
 
+const MarketRowItem = ({
+  row,
+  onPress,
+}: {
+  row: MarketRow;
+  onPress: () => void;
+}) => (
+  <PressableScale
+    onPress={onPress}
+    scaleTo={0.985}
+    style={styles.row}
+    accessibilityRole="button"
+    accessibilityLabel={`Ver ${row.displaySymbol}`}
+  >
+    <Mono symbol={row.displaySymbol} />
+    <View style={styles.rowMain}>
+      <Txt variant="bodyStrong">{row.displaySymbol}</Txt>
+      <Txt variant="caption" color="ink3" numberOfLines={1}>
+        {row.name}
+      </Txt>
+    </View>
+    <Sparkline data={row.history} up={row.pct >= 0} width={64} height={28} />
+    <View style={styles.rowRight}>
+      <Txt variant="price">{row.price > 0 ? fmtUsd(row.price) : '—'}</Txt>
+      <View style={styles.deltaWrap}>
+        <Delta pct={row.pct} size="sm" />
+      </View>
+    </View>
+  </PressableScale>
+);
+
 const styles = StyleSheet.create({
-  centered: {
+  screen: { flex: 1, backgroundColor: colors.bg },
+  center: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: colors.bg,
     alignItems: 'center',
-    gap: 24,
-    padding: 24,
-  },
-  container: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'stretch',
-    gap: 24,
-    padding: 24,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
-    textAlign: 'center',
+  content: { paddingBottom: 32 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: spacing.sm,
   },
-  error: { color: 'red' },
-  liveCard: {
+  h1: { marginTop: 2 },
+  bell: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.pill,
+    backgroundColor: colors.bg2,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 16,
-    gap: 10,
-    backgroundColor: '#F8FAFC',
-  },
-  liveHeading: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  liveRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  liveSymbol: { fontSize: 15, color: '#0F172A', fontWeight: '600' },
-  livePrice: {
-    fontSize: 15,
-    color: '#16A34A',
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  button: {
-    backgroundColor: '#2563EB',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    borderColor: colors.hair,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  secondaryButton: { paddingVertical: 10, alignItems: 'center' },
-  secondaryButtonText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
+  bellDot: {
+    position: 'absolute',
+    top: 11,
+    right: 12,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.up,
+    borderWidth: 2,
+    borderColor: colors.bg2,
+  },
+  card: {
+    marginHorizontal: 20,
+    marginTop: spacing.sm,
+    padding: 18,
+    backgroundColor: colors.bg2,
+    borderWidth: 1,
+    borderColor: colors.hair,
+    borderRadius: radii.lg,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  cardDelta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: 6,
+  },
+  tabs: {
+    flexDirection: 'row',
+    gap: 18,
+    paddingHorizontal: 20,
+    marginTop: spacing.lg,
+    marginBottom: 2,
+  },
+  tab: {
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 2,
+    borderColor: 'transparent',
+  },
+  tabActive: { borderColor: colors.up },
+  list: { paddingHorizontal: 4, paddingTop: 4 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radii.md,
+  },
+  rowMain: { flex: 1, minWidth: 0 },
+  rowRight: { alignItems: 'flex-end', minWidth: 86, gap: 3 },
+  deltaWrap: { alignSelf: 'flex-end' },
 });

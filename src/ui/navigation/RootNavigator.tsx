@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import { NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { observer } from 'mobx-react-lite';
 
@@ -15,11 +15,16 @@ import { HomeScreen } from '@/ui/screens/Home/HomeScreen';
 import { LoginScreen } from '@/ui/screens/Login/LoginScreen';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 import { PermissionsScreen } from '@/ui/screens/Permissions/PermissionsScreen';
+import { ProfileScreen } from '@/ui/screens/Profile/ProfileScreen';
 import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
+
+import { Icon, type IconName, Spinner } from '@/ui/components';
+import { colors, fonts } from '@/ui/theme/tokens';
 
 export type AppTabParamList = {
   Home: undefined;
   Alerts: undefined;
+  Profile: undefined;
 };
 
 export type RootStackParamList = {
@@ -33,26 +38,58 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
-const tabIcon = (glyph: string) => {
-  const TabIcon = ({ color }: { color: string }) => (
-    <Text style={{ fontSize: 18, color }}>{glyph}</Text>
+const tabIcon = (name: IconName) => {
+  const TabIcon = ({ color, focused }: { color: string; focused: boolean }) => (
+    <Icon
+      name={name}
+      size={24}
+      color={color}
+      fill={focused ? colors.upDim : 'none'}
+    />
   );
   return TabIcon;
 };
 
+const navTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: colors.bg,
+    card: colors.bg2,
+    border: colors.hair,
+    primary: colors.up,
+    text: colors.ink,
+  },
+};
+
 const AppTabs = () => (
   <Tab.Navigator
-    screenOptions={{ headerShown: true, tabBarActiveTintColor: '#2563EB' }}
+    screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: colors.up,
+      tabBarInactiveTintColor: colors.ink3,
+      tabBarStyle: {
+        backgroundColor: colors.bg2,
+        borderTopColor: colors.hair,
+        borderTopWidth: 1,
+      },
+      tabBarLabelStyle: { fontFamily: fonts.sans.bold, fontSize: 10.5 },
+    }}
   >
     <Tab.Screen
       name="Home"
       component={HomeScreen}
-      options={{ title: 'Home', tabBarIcon: tabIcon('🏠') }}
+      options={{ title: 'Mercado', tabBarIcon: tabIcon('home') }}
     />
     <Tab.Screen
       name="Alerts"
       component={AlertsListScreen}
-      options={{ title: 'Alerts', tabBarIcon: tabIcon('🔔') }}
+      options={{ title: 'Alertas', tabBarIcon: tabIcon('bellTab') }}
+    />
+    <Tab.Screen
+      name="Profile"
+      component={ProfileScreen}
+      options={{ title: 'Perfil', tabBarIcon: tabIcon('user') }}
     />
   </Tab.Navigator>
 );
@@ -71,13 +108,13 @@ export const RootNavigator = observer(() => {
   if (session.isCheckingSession) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator size="large" />
+        <Spinner size={28} color={colors.up} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: true }}>
         {session.isAuthenticated ? (
           session.needsPermissionsOnboarding ? (
@@ -96,13 +133,13 @@ export const RootNavigator = observer(() => {
               <Stack.Screen
                 name="StockDetail"
                 component={StockDetailScreen}
-                options={{ title: 'Stock detail' }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="CreateStockAlert"
                 component={CreateStockAlertScreen}
                 options={{
-                  title: 'New alert',
+                  title: 'Nueva alerta',
                   presentation: 'formSheet',
                   sheetAllowedDetents: 'fitToContents',
                 }}
@@ -122,5 +159,10 @@ export const RootNavigator = observer(() => {
 });
 
 const styles = {
-  splash: { flex: 1, justifyContent: 'center', alignItems: 'center' } as const,
+  splash: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+  } as const,
 };
