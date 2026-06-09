@@ -35,6 +35,10 @@ import {
   FinnhubManagerImpl,
 } from '@/data/network/finnhubManager';
 import {
+  FinnhubSocketManager,
+  FinnhubSocketManagerImpl,
+} from '@/data/network/finnhubSocketManager';
+import {
   NotificationApiManager,
   NotificationApiManagerImpl,
 } from '@/data/network/notificationApiManager';
@@ -48,23 +52,28 @@ import {
 } from '@/data/network/webhookManager';
 
 import { NotificationServiceImpl } from '@/data/services/NotificationServiceImpl';
+import { RealtimePriceServiceImpl } from '@/data/services/RealtimePriceServiceImpl';
 import { StockAlertServiceImpl } from '@/data/services/StockAlertServiceImpl';
 import { StockServiceImpl } from '@/data/services/StockServiceImpl';
 
 import { NotificationRepositoryImpl } from '@/data/repositories/NotificationRepositoryImpl';
+import { RealtimePriceRepositoryImpl } from '@/data/repositories/RealtimePriceRepositoryImpl';
 import { StockAlertRepositoryImpl } from '@/data/repositories/StockAlertRepositoryImpl';
 import { StockRepositoryImpl } from '@/data/repositories/StockRepositoryImpl';
 
 import type { NotificationRepository } from '@/domain/repositories/NotificationRepository';
+import type { RealtimePriceRepository } from '@/domain/repositories/RealtimePriceRepository';
 import type { StockAlertRepository } from '@/domain/repositories/StockAlertRepository';
 import type { StockRepository } from '@/domain/repositories/StockRepository';
 import type { NotificationService } from '@/domain/services/NotificationService';
+import type { RealtimePriceService } from '@/domain/services/RealtimePriceService';
 import type { StockAlertService } from '@/domain/services/StockAlertService';
 import type { StockService } from '@/domain/services/StockService';
 
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
 import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
+import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
 
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
@@ -97,6 +106,11 @@ container
   .to(NotificationApiManagerImpl)
   .inSingletonScope();
 
+container
+  .bind<FinnhubSocketManager>(TYPES.FinnhubSocketManager)
+  .to(FinnhubSocketManagerImpl)
+  .inSingletonScope();
+
 // Services (domain contract → data impl; wraps a manager, maps to domain)
 container
   .bind<StockService>(TYPES.StockService)
@@ -111,6 +125,11 @@ container
 container
   .bind<NotificationService>(TYPES.NotificationService)
   .to(NotificationServiceImpl)
+  .inSingletonScope();
+
+container
+  .bind<RealtimePriceService>(TYPES.RealtimePriceService)
+  .to(RealtimePriceServiceImpl)
   .inSingletonScope();
 
 // Repositories (domain contract → data impl; delegates to a service)
@@ -129,6 +148,11 @@ container
   .to(NotificationRepositoryImpl)
   .inSingletonScope();
 
+container
+  .bind<RealtimePriceRepository>(TYPES.RealtimePriceRepository)
+  .to(RealtimePriceRepositoryImpl)
+  .inSingletonScope();
+
 // UseCases
 container
   .bind<GetStockListUseCase>(TYPES.GetStockListUseCase)
@@ -143,6 +167,10 @@ container
     TYPES.RegisterPushNotificationsUseCase,
   )
   .to(RegisterPushNotificationsUseCase);
+
+container
+  .bind<SubscribeToPricesUseCase>(TYPES.SubscribeToPricesUseCase)
+  .to(SubscribeToPricesUseCase);
 
 // UI ViewModels
 container.bind<HomeViewModel>(TYPES.HomeViewModel).to(HomeViewModel);

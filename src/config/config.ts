@@ -9,6 +9,8 @@ export const config = {
   BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.example.com',
   FINNHUB_BASE_URL:
     process.env.EXPO_PUBLIC_FINNHUB_BASE_URL || 'https://finnhub.io/api/v1',
+  FINNHUB_SOCKET_URL:
+    process.env.EXPO_PUBLIC_FINNHUB_SOCKET_URL || 'wss://ws.finnhub.io',
   FINNHUB_API_KEY: process.env.EXPO_PUBLIC_FINNHUB_API_KEY || '',
   WEBHOOK_BASE_URL:
     process.env.EXPO_PUBLIC_WEBHOOK_BASE_URL ||

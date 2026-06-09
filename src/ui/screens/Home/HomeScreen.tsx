@@ -22,6 +22,7 @@ export const HomeScreen = observer(() => {
 
   useEffect(() => {
     vm.initialize();
+    return () => vm.dispose();
   }, [vm]);
 
   if (vm.isInitLoading) {
@@ -41,8 +42,20 @@ export const HomeScreen = observer(() => {
   }
 
   return (
-    <View style={styles.centered}>
+    <View style={styles.container}>
       <Text style={styles.title}>Welcome to Home!</Text>
+
+      <View style={styles.liveCard}>
+        <Text style={styles.liveHeading}>Live prices</Text>
+        {vm.livePriceList.map(({ symbol, price }) => (
+          <View key={symbol} style={styles.liveRow}>
+            <Text style={styles.liveSymbol}>{symbol}</Text>
+            <Text style={styles.livePrice}>
+              {price > 0 ? `$${price.toLocaleString()}` : '—'}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <Pressable
         onPress={() => navigation.navigate('CreateStockAlert')}
@@ -63,13 +76,49 @@ const styles = StyleSheet.create({
     gap: 24,
     padding: 24,
   },
-  title: { fontSize: 18, fontWeight: '600', color: '#0F172A' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    gap: 24,
+    padding: 24,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
   error: { color: 'red' },
+  liveCard: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 16,
+    gap: 10,
+    backgroundColor: '#F8FAFC',
+  },
+  liveHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  liveRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  liveSymbol: { fontSize: 15, color: '#0F172A', fontWeight: '600' },
+  livePrice: {
+    fontSize: 15,
+    color: '#16A34A',
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
   button: {
     backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
+    alignItems: 'center',
   },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });

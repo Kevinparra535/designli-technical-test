@@ -223,6 +223,8 @@ module.exports = [
       'ios/',
       'coverage/',
       'dist/',
+      // The Node backend lives in api/ and has its own tooling.
+      'api/',
     ],
   },
 ];

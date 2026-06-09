@@ -7,6 +7,9 @@ dist/
 package-lock.json
 assets/
 
+# Node backend — separate project with its own formatting config
+api/
+
 # Skills are structured XML+CDATA prompt files; prettier's markdown parser
 # reflows the embedded code and breaks indentation. Keep them as authored.
 skills/
