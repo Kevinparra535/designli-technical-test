@@ -66,6 +66,12 @@ export const env = {
   // Alert evaluation worker.
   POLL_INTERVAL_MS: number('POLL_INTERVAL_MS', 15000),
   ALERT_WORKER_ENABLED: optional('ALERT_WORKER_ENABLED', 'true') !== 'false',
+
+  // Test/QA user seed (idempotent, runs after migrations). Lets reviewers and
+  // App Check log in without a manual step. Set SEED_TEST_USER=false to disable.
+  SEED_TEST_USER: optional('SEED_TEST_USER', 'true') !== 'false',
+  TEST_USER_EMAIL: optional('TEST_USER_EMAIL', 'appcheck@test.com'),
+  TEST_USER_PASSWORD: optional('TEST_USER_PASSWORD', 'password123'),
 } as const;
 
 export const isProd = env.NODE_ENV === 'production';

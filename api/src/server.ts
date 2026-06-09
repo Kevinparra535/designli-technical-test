@@ -8,6 +8,7 @@ import { createApp } from './app';
 import { pool } from './config/db';
 import { env } from './config/env';
 import { migrate } from './db/migrate';
+import { seed } from './db/seed';
 import { priceHub } from './modules/prices/priceHub';
 import { attachPriceGateway } from './modules/prices/prices.gateway';
 import { startAlertWorker, stopAlertWorker } from './worker/alertWorker';
@@ -15,6 +16,8 @@ import { startAlertWorker, stopAlertWorker } from './worker/alertWorker';
 async function main() {
   await migrate();
   console.log('[server] migrations applied');
+
+  await seed();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
