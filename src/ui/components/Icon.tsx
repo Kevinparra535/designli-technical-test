@@ -4,7 +4,7 @@
 // react-native-svg. All glyphs use a 24×24 viewBox. `color` drives stroke;
 // `fill` (for tab icons in their active state) drives the filled area.
 
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from '@/ui/theme/tokens';
 
@@ -25,7 +25,8 @@ export type IconName =
   | 'user'
   | 'pause'
   | 'bolt'
-  | 'trash';
+  | 'trash'
+  | 'lock';
 
 type Props = {
   name: IconName;
@@ -187,6 +188,26 @@ function renderGlyph(
           strokeWidth={sw ?? 1.7}
           d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13"
         />
+      );
+    case 'lock':
+      return (
+        <>
+          <Rect
+            x="5"
+            y="10.5"
+            width="14"
+            height="9.5"
+            rx="2.5"
+            stroke={color}
+            strokeWidth={sw ?? 1.7}
+            fill="none"
+          />
+          <Path
+            {...c}
+            strokeWidth={sw ?? 1.7}
+            d="M8 10.5V8a4 4 0 0 1 8 0v2.5"
+          />
+        </>
       );
     default:
       return null;

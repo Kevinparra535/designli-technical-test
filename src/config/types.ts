@@ -60,6 +60,7 @@ export const TYPES = {
   HomeViewModel: Symbol.for('HomeViewModel'),
   CreateStockAlertViewModel: Symbol.for('CreateStockAlertViewModel'),
   AlertsListViewModel: Symbol.for('AlertsListViewModel'),
+  PermissionsViewModel: Symbol.for('PermissionsViewModel'),
   StockDetailViewModel: Symbol.for('StockDetailViewModel'),
   SessionViewModel: Symbol.for('SessionViewModel'),
 } as const;

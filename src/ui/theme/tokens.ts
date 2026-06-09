@@ -33,6 +33,7 @@ export const colors = {
   warn: '#FFB23E', // triggered / alert fired
   warnDim: 'rgba(255,178,62,0.15)',
   info: '#5AA9FF',
+  infoDim: 'rgba(90,169,255,0.14)',
 } as const;
 
 export const radii = {

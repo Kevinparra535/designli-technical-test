@@ -22,6 +22,11 @@ export class SessionViewModel {
   isCheckingSession = true;
   currentUser: User | null = null;
 
+  // True right after a fresh login → routes the user through the notification
+  // permissions onboarding once before entering the app. A restored session
+  // (checkSession) skips it.
+  needsPermissionsOnboarding = false;
+
   // ── Login state ───────────────────────────────────────────────────────────────
   isSubmitting = false;
   submitError: string | null = null;
@@ -81,6 +86,7 @@ export class SessionViewModel {
       runInAction(() => {
         this.currentUser = user;
         this.isSubmitting = false;
+        this.needsPermissionsOnboarding = true;
       });
       return true;
     } catch (error) {
@@ -92,6 +98,13 @@ export class SessionViewModel {
       });
       return false;
     }
+  }
+
+  /** Finish the post-login notification-permissions step → enter the app. */
+  completePermissionsOnboarding(): void {
+    runInAction(() => {
+      this.needsPermissionsOnboarding = false;
+    });
   }
 
   async signOut(): Promise<void> {

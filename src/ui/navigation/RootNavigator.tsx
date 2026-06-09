@@ -14,6 +14,7 @@ import { CreateStockAlertScreen } from '@/ui/screens/CreateStockAlert/CreateStoc
 import { HomeScreen } from '@/ui/screens/Home/HomeScreen';
 import { LoginScreen } from '@/ui/screens/Login/LoginScreen';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+import { PermissionsScreen } from '@/ui/screens/Permissions/PermissionsScreen';
 import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
 
 export type AppTabParamList = {
@@ -23,6 +24,7 @@ export type AppTabParamList = {
 
 export type RootStackParamList = {
   Login: undefined;
+  Permissions: undefined;
   Main: NavigatorScreenParams<AppTabParamList> | undefined;
   StockDetail: { symbol: string };
   CreateStockAlert: { symbol?: string } | undefined;
@@ -78,27 +80,35 @@ export const RootNavigator = observer(() => {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: true }}>
         {session.isAuthenticated ? (
-          <>
+          session.needsPermissionsOnboarding ? (
             <Stack.Screen
-              name="Main"
-              component={AppTabs}
+              name="Permissions"
+              component={PermissionsScreen}
               options={{ headerShown: false }}
             />
-            <Stack.Screen
-              name="StockDetail"
-              component={StockDetailScreen}
-              options={{ title: 'Stock detail' }}
-            />
-            <Stack.Screen
-              name="CreateStockAlert"
-              component={CreateStockAlertScreen}
-              options={{
-                title: 'New alert',
-                presentation: 'formSheet',
-                sheetAllowedDetents: 'fitToContents',
-              }}
-            />
-          </>
+          ) : (
+            <>
+              <Stack.Screen
+                name="Main"
+                component={AppTabs}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="StockDetail"
+                component={StockDetailScreen}
+                options={{ title: 'Stock detail' }}
+              />
+              <Stack.Screen
+                name="CreateStockAlert"
+                component={CreateStockAlertScreen}
+                options={{
+                  title: 'New alert',
+                  presentation: 'formSheet',
+                  sheetAllowedDetents: 'fitToContents',
+                }}
+              />
+            </>
+          )
         ) : (
           <Stack.Screen
             name="Login"

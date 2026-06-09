@@ -94,6 +94,7 @@ import { AlertsListViewModel } from '@/ui/screens/AlertsList/AlertsListViewModel
 import { CreateStockAlertViewModel } from '@/ui/screens/CreateStockAlert/CreateStockAlertViewModel';
 import { HomeViewModel } from '@/ui/screens/Home/HomeViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
+import { PermissionsViewModel } from '@/ui/screens/Permissions/PermissionsViewModel';
 import { StockDetailViewModel } from '@/ui/screens/StockDetail/StockDetailViewModel';
 
 import {
@@ -246,6 +247,9 @@ container
 container
   .bind<AlertsListViewModel>(TYPES.AlertsListViewModel)
   .to(AlertsListViewModel);
+container
+  .bind<PermissionsViewModel>(TYPES.PermissionsViewModel)
+  .to(PermissionsViewModel);
 container
   .bind<StockDetailViewModel>(TYPES.StockDetailViewModel)
   .to(StockDetailViewModel);
