@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
@@ -14,7 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { config } from '@/config/config';
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { colors, fonts, screenPad, spacing } from '@/ui/styles/tokens';
@@ -30,6 +28,7 @@ import {
   PressableScale,
   Txt,
 } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 import { loginSchema } from '@/ui/schemas';
 
 import { SessionViewModel } from './SessionViewModel';
@@ -54,10 +53,7 @@ const TICKERS = [
 ];
 
 export const LoginScreen = observer(() => {
-  const viewModel = useMemo(
-    () => container.get<SessionViewModel>(TYPES.SessionViewModel),
-    [],
-  );
+  const viewModel = useViewModel<SessionViewModel>(TYPES.SessionViewModel);
 
   const {
     control,

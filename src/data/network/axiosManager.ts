@@ -5,9 +5,8 @@ import qs from 'qs';
 import { config } from '@/config/config';
 import { TYPES } from '@/config/types';
 
-import Logger from '@/ui/utils/Logger';
-
 import type { AuthTokenStore } from '@/data/storage/authTokenStore';
+import Logger from '@/shared/Logger';
 
 export interface HttpManager {
   get<T = any>(

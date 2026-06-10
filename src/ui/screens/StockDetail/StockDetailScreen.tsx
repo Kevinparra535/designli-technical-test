@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -6,7 +6,6 @@ import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
@@ -25,6 +24,7 @@ import {
   Spinner,
   Txt,
 } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 
 import { StockDetailViewModel } from './StockDetailViewModel';
 
@@ -36,9 +36,8 @@ type DetailNavigation = NativeStackNavigationProp<
 const RANGES = ['1H', '1D', '1S', '1M', '1A', 'Máx'] as const;
 
 export const StockDetailScreen = observer(() => {
-  const viewModel = useMemo(
-    () => container.get<StockDetailViewModel>(TYPES.StockDetailViewModel),
-    [],
+  const viewModel = useViewModel<StockDetailViewModel>(
+    TYPES.StockDetailViewModel,
   );
   const navigation = useNavigation<DetailNavigation>();
   const route = useRoute<RouteProp<RootStackParamList, 'StockDetail'>>();

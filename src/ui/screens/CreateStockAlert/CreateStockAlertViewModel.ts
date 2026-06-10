@@ -7,7 +7,7 @@ import { type AlertCondition, StockAlert } from '@/domain/entities/StockAlert';
 
 import { CreateStockAlertUseCase } from '@/domain/useCases/CreateStockAlertUseCase';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 export type { AlertCondition };
 

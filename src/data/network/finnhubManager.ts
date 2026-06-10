@@ -6,7 +6,7 @@ import { TYPES } from '@/config/types';
 
 import { HttpManager } from '@/data/network/axiosManager';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 export interface FinnhubQuote {
   c: number; // Current price

@@ -7,7 +7,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { injectable } from 'inversify';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 const TOKEN_KEY = 'auth_token';
 

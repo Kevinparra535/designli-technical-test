@@ -1,9 +1,8 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { BlurView } from 'expo-blur';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { colors, type ColorToken, radii, spacing } from '@/ui/styles/tokens';
@@ -16,6 +15,7 @@ import {
   PressableScale,
   Txt,
 } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 
 import { PermissionsViewModel } from './PermissionsViewModel';
@@ -53,14 +53,10 @@ const BENEFITS: Benefit[] = [
 ];
 
 export const PermissionsScreen = observer(() => {
-  const viewModel = useMemo(
-    () => container.get<PermissionsViewModel>(TYPES.PermissionsViewModel),
-    [],
+  const viewModel = useViewModel<PermissionsViewModel>(
+    TYPES.PermissionsViewModel,
   );
-  const session = useMemo(
-    () => container.get<SessionViewModel>(TYPES.SessionViewModel),
-    [],
-  );
+  const session = useViewModel<SessionViewModel>(TYPES.SessionViewModel);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

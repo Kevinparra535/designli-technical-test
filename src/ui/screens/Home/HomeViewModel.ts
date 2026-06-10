@@ -11,7 +11,7 @@ import { GetStockListUseCase } from '@/domain/useCases/GetStockListUseCase';
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 import { SubscribeToPricesUseCase } from '@/domain/useCases/SubscribeToPricesUseCase';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 type ICalls = 'init';
 

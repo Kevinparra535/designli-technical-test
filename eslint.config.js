@@ -214,6 +214,61 @@ module.exports = [
     },
   },
 
+  // ── Architecture boundaries (enforce the one-way dependency flow) ──────────
+  // ui → viewModel → useCase → domain (contracts) · data implements them.
+  // Cross-cutting utilities (e.g. Logger) live in @/shared and are unrestricted.
+  {
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/data', '@/data/**', '@/ui', '@/ui/**'],
+              message:
+                'Domain must not import from data or ui — depend only on domain contracts (rule 4).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/data', '@/data/**'],
+              message:
+                'UI must go through use cases — never import data implementations directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/data/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/ui', '@/ui/**'],
+              message:
+                'Data must not import from ui — cross-cutting utils belong in @/shared.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ── Ignores ────────────────────────────────────────────────────────────────
   {
     ignores: [

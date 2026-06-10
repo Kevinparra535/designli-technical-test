@@ -9,7 +9,7 @@ import { CheckActiveSessionUseCase } from '@/domain/useCases/CheckActiveSessionU
 import { LoginUseCase } from '@/domain/useCases/LoginUseCase';
 import { LogoutUseCase } from '@/domain/useCases/LogoutUseCase';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 // App-global session state. Bound as a SINGLETON (the rare global-VM exception)
 // so both LoginScreen and RootNavigator observe the same instance.

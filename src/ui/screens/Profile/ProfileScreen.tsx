@@ -1,22 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 import { accountInitials, accountName } from '@/ui/utils/format';
 
 import { Appear, Button, Txt } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 
 export const ProfileScreen = observer(() => {
-  const session = useMemo(
-    () => container.get<SessionViewModel>(TYPES.SessionViewModel),
-    [],
-  );
+  const session = useViewModel<SessionViewModel>(TYPES.SessionViewModel);
   const insets = useSafeAreaInsets();
 
   // Local preferences (UI only — not persisted to a backend).

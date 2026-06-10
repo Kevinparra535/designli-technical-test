@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const loginSchema = z.object({
   email: z
@@ -7,7 +7,6 @@ export const loginSchema = z.object({
     .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Correo no válido.'),
   password: z.string().min(6, 'Mínimo 6 caracteres.'),
 });
-
 
 export const stockAlertSchema = z.object({
   symbol: z.string().trim().min(1, 'Enter a symbol.'),

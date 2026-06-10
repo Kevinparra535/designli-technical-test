@@ -5,7 +5,7 @@ import { TYPES } from '@/config/types';
 
 import { RegisterPushNotificationsUseCase } from '@/domain/useCases/RegisterPushNotificationsUseCase';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 @injectable()
 export class PermissionsViewModel {

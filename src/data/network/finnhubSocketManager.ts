@@ -17,7 +17,7 @@ import { injectable } from 'inversify';
 
 import { config } from '@/config/config';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 export type FinnhubTradeDto = {
   s: string;

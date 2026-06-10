@@ -9,7 +9,7 @@ import { DeleteStockAlertUseCase } from '@/domain/useCases/DeleteStockAlertUseCa
 import { GetStockAlertsUseCase } from '@/domain/useCases/GetStockAlertsUseCase';
 import { TestStockAlertUseCase } from '@/domain/useCases/TestStockAlertUseCase';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 @injectable()
 export class AlertsListViewModel {

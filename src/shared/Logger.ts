@@ -1,9 +1,10 @@
-// src/ui/utils/Logger.ts
+// src/shared/Logger.ts
 //
-// Tiny platform-agnostic logger used by ViewModels (and anywhere in the ui
-// layer). Keeps ViewModels free of raw console calls and gives every log a
-// consistent, taggable prefix. Swap the sink (Sentry, Datadog, etc.) here
-// without touching callers.
+// Tiny cross-cutting logger used across layers (data managers + ui ViewModels).
+// Lives in `shared/` — NOT under `ui/` — so the data layer can use it without
+// crossing the ui boundary. Keeps callers free of raw console calls and gives
+// every log a consistent, taggable prefix. Swap the sink (Sentry, Datadog, …)
+// here without touching callers.
 
 type Level = 'debug' | 'info' | 'warn' | 'error';
 

@@ -13,7 +13,7 @@ import { HttpManager } from '@/data/network/axiosManager';
 
 import type { DeviceRegistrationJson } from '@/data/models/DeviceRegistrationModel';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 export interface NotificationApiManager {
   registerDevice(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -7,7 +7,6 @@ import type { CompositeNavigationProp } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import type {
@@ -28,6 +27,7 @@ import {
   Spinner,
   Txt,
 } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
 
 import { HomeViewModel, type MarketRow } from './HomeViewModel';
@@ -45,14 +45,8 @@ const greeting = (email?: string) => {
 };
 
 export const HomeScreen = observer(() => {
-  const viewModel = useMemo(
-    () => container.get<HomeViewModel>(TYPES.HomeViewModel),
-    [],
-  );
-  const session = useMemo(
-    () => container.get<SessionViewModel>(TYPES.SessionViewModel),
-    [],
-  );
+  const viewModel = useViewModel<HomeViewModel>(TYPES.HomeViewModel);
+  const session = useViewModel<SessionViewModel>(TYPES.SessionViewModel);
   const navigation = useNavigation<HomeNavigation>();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('watch');

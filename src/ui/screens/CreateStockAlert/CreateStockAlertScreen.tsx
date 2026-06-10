@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
@@ -8,7 +7,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { z } from 'zod';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import type { AlertCondition } from '@/domain/entities/StockAlert';
@@ -19,6 +17,7 @@ import { colors, screenPad, spacing } from '@/ui/styles/tokens';
 
 import type { SegmentOption } from '@/ui/components';
 import { Appear, Button, Field, Segmented, Txt } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 import { stockAlertSchema } from '@/ui/schemas';
 
 import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
@@ -26,7 +25,6 @@ import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
 // Client-side validation lives here (UI concern); the ViewModel owns the
 // business action. targetPrice stays a string for the TextInput and is parsed
 // on submit.
-
 
 type FormValues = z.infer<typeof stockAlertSchema>;
 
@@ -36,10 +34,8 @@ const CONDITION_OPTIONS: SegmentOption<AlertCondition>[] = [
 ];
 
 export const CreateStockAlertScreen = observer(() => {
-  const viewModel = useMemo(
-    () =>
-      container.get<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel),
-    [],
+  const viewModel = useViewModel<CreateStockAlertViewModel>(
+    TYPES.CreateStockAlertViewModel,
   );
 
   const navigation =

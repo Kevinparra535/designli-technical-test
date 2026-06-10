@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -7,7 +7,6 @@ import type { CompositeNavigationProp } from '@react-navigation/native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { StockAlert } from '@/domain/entities/StockAlert';
@@ -30,6 +29,7 @@ import {
   Toast,
   Txt,
 } from '@/ui/components';
+import { useViewModel } from '@/ui/hooks/useViewModel';
 
 import { AlertsListViewModel } from './AlertsListViewModel';
 
@@ -39,9 +39,8 @@ type AlertsNavigation = CompositeNavigationProp<
 >;
 
 export const AlertsListScreen = observer(() => {
-  const viewModel = useMemo(
-    () => container.get<AlertsListViewModel>(TYPES.AlertsListViewModel),
-    [],
+  const viewModel = useViewModel<AlertsListViewModel>(
+    TYPES.AlertsListViewModel,
   );
   const navigation = useNavigation<AlertsNavigation>();
   const insets = useSafeAreaInsets();

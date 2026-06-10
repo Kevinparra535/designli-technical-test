@@ -13,7 +13,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { injectable } from 'inversify';
 
-import Logger from '@/ui/utils/Logger';
+import Logger from '@/shared/Logger';
 
 export type DeviceToken = {
   token: string;
