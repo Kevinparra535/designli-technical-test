@@ -1,5 +1,7 @@
 # Backend — cómo funciona (resumen técnico)
 
+> 🌐 Idioma: **Español** · [English](./ARCHITECTURE.en.md)
+
 Backend del test **React Native + Node**. Implementa lo que el dispositivo no
 puede hacer solo: autenticación, persistencia de alertas y **push FCM cuando el
 precio de una acción sube por encima del precio de la alerta** (requisito #5).
