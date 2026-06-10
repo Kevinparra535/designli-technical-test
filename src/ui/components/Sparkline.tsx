@@ -6,7 +6,7 @@
 import { useId } from 'react';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
-import { colors } from '@/ui/theme/tokens';
+import { colors } from '@/ui/styles/tokens';
 
 type Props = {
   data: number[];

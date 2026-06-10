@@ -6,7 +6,7 @@
 
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { colors } from '@/ui/theme/tokens';
+import { colors } from '@/ui/styles/tokens';
 
 export type IconName =
   | 'bell'

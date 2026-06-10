@@ -14,14 +14,6 @@ export interface DecodedAlert {
   targetPrice: number;
 }
 
-export function encodeAlertEvent(
-  symbol: string,
-  condition: AlertCondition,
-  targetPrice: number,
-): string {
-  return `${STOCK_ALERT_EVENT_PREFIX}:${symbol}:${condition}:${targetPrice}`;
-}
-
 /** Parse an event string. Returns null if it is not a stock-price-alert event. */
 export function decodeAlertEvent(event: string): DecodedAlert | null {
   const parts = event.split(':');

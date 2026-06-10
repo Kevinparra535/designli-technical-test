@@ -6,9 +6,10 @@
 
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 
-import { motion } from '@/ui/theme/motion';
-import { colors, radii, shadows } from '@/ui/theme/tokens';
+import { motion } from '@/ui/styles/motion';
+import { colors, radii, shadows } from '@/ui/styles/tokens';
 
 import { Txt } from './Txt';
 
@@ -78,11 +79,18 @@ export function Toast({
         },
       ]}
     >
-      <View style={[styles.card, { borderColor: ACCENT[tone] }]}>
-        {icon ? <View style={styles.icon}>{icon}</View> : null}
-        <Txt variant="bodyStrong" numberOfLines={2} style={styles.msg}>
-          {message}
-        </Txt>
+      <View style={styles.shadow}>
+        <BlurView
+          intensity={28}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={[styles.card, { borderColor: ACCENT[tone] }]}
+        >
+          {icon ? <View style={styles.icon}>{icon}</View> : null}
+          <Txt variant="bodyStrong" numberOfLines={2} style={styles.msg}>
+            {message}
+          </Txt>
+        </BlurView>
       </View>
     </Animated.View>
   );
@@ -98,17 +106,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 100,
   },
+  shadow: {
+    maxWidth: '100%',
+    borderRadius: radii.lg,
+    ...shadows.sheet,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    maxWidth: '100%',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.bg2,
+    backgroundColor: colors.glass,
     borderRadius: radii.lg,
     borderWidth: 1,
-    ...shadows.sheet,
+    overflow: 'hidden',
   },
   icon: { marginRight: 2 },
   msg: { flexShrink: 1 },

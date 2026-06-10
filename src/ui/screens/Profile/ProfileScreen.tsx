@@ -8,7 +8,7 @@ import { TYPES } from '@/config/types';
 
 import { Appear, Button, Txt } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 const initialsOf = (email?: string) => {
   const local = email ? email.split('@')[0] : '';

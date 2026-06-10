@@ -5,7 +5,7 @@
 
 import { StyleSheet, View } from 'react-native';
 
-import { colors, fonts } from '@/ui/theme/tokens';
+import { colors, fonts } from '@/ui/styles/tokens';
 
 import { Txt } from './Txt';
 

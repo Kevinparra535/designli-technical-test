@@ -7,7 +7,7 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 
-import { motion } from '@/ui/theme/motion';
+import { motion } from '@/ui/styles/motion';
 
 type Props = {
   children: ReactNode;

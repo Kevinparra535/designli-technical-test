@@ -5,8 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { RootNavigator } from '@/ui/navigation/RootNavigator';
 
 import { Spinner } from '@/ui/components';
-import { fontAssets } from '@/ui/theme/fonts';
-import { colors } from '@/ui/theme/tokens';
+import { fontAssets } from '@/ui/styles/fonts';
+import { colors } from '@/ui/styles/tokens';
 
 export default function App() {
   const [fontsLoaded] = useFonts(fontAssets);

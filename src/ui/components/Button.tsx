@@ -7,7 +7,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { colors, fonts, radii, shadows } from '@/ui/theme/tokens';
+import { colors, fonts, radii, shadows } from '@/ui/styles/tokens';
 
 import { PressableScale } from './PressableScale';
 import { Spinner } from './Spinner';

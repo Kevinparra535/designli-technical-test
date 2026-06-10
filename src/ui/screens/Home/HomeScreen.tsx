@@ -26,7 +26,7 @@ import {
   Txt,
 } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 import { HomeViewModel, type MarketRow } from './HomeViewModel';
 

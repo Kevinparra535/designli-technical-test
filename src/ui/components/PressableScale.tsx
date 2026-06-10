@@ -15,7 +15,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { motion } from '@/ui/theme/motion';
+import { motion } from '@/ui/styles/motion';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 

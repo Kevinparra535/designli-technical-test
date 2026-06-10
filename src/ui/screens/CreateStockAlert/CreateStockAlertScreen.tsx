@@ -17,7 +17,7 @@ import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
 import type { SegmentOption } from '@/ui/components';
 import { Appear, Button, Field, Segmented, Txt } from '@/ui/components';
-import { colors, screenPad, spacing } from '@/ui/theme/tokens';
+import { colors, screenPad, spacing } from '@/ui/styles/tokens';
 
 import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
 

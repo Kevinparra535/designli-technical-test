@@ -10,12 +10,15 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { observer } from 'mobx-react-lite';
+import { BlurView } from 'expo-blur';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { config } from '@/config/config';
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
+
+import { colors, fonts, screenPad, spacing } from '@/ui/styles/tokens';
 
 import {
   Appear,
@@ -25,7 +28,6 @@ import {
   PressableScale,
   Txt,
 } from '@/ui/components';
-import { colors, fonts, screenPad, spacing } from '@/ui/theme/tokens';
 
 import { SessionViewModel } from './SessionViewModel';
 
@@ -86,145 +88,147 @@ export const LoginScreen = observer(() => {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* ambient green glow */}
-      <View pointerEvents="none" style={styles.glow} />
+      <BlurView style={styles.flex} intensity={100} tint="dark">
+        {/* ambient green glow */}
+        <View pointerEvents="none" style={styles.glow} />
 
-      {/* faint ticker tape */}
-      <View pointerEvents="none" style={styles.ticker}>
-        {TICKERS.map((t) => (
-          <View key={t.sym} style={styles.tickerItem}>
-            <Txt
-              style={{ fontFamily: fonts.mono.semibold, fontSize: 11.5 }}
-              color="ink2"
-            >
-              {t.sym}
+        {/* faint ticker tape */}
+        <View pointerEvents="none" style={styles.ticker}>
+          {TICKERS.map((t) => (
+            <View key={t.sym} style={styles.tickerItem}>
+              <Txt
+                style={{ fontFamily: fonts.mono.semibold, fontSize: 11.5 }}
+                color="ink2"
+              >
+                {t.sym}
+              </Txt>
+              <Txt
+                style={{ fontFamily: fonts.mono.semibold, fontSize: 11.5 }}
+                color={t.pct >= 0 ? 'up' : 'down'}
+              >
+                {fmtPct(t.pct)}
+              </Txt>
+            </View>
+          ))}
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* brand */}
+          <Appear>
+            <BrandMark />
+            <Txt variant="title" style={styles.headline}>
+              {'Tus alertas,\nen tiempo real.'}
             </Txt>
-            <Txt
-              style={{ fontFamily: fonts.mono.semibold, fontSize: 11.5 }}
-              color={t.pct >= 0 ? 'up' : 'down'}
-            >
-              {fmtPct(t.pct)}
+            <Txt variant="body" color="ink3" style={styles.subcopy}>
+              Sigue acciones y recibe una notificación cuando crucen tu precio
+              objetivo.
             </Txt>
-          </View>
-        ))}
-      </View>
+          </Appear>
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* brand */}
-        <Appear>
-          <BrandMark />
-          <Txt variant="title" style={styles.headline}>
-            {'Tus alertas,\nen tiempo real.'}
-          </Txt>
-          <Txt variant="body" color="ink3" style={styles.subcopy}>
-            Sigue acciones y recibe una notificación cuando crucen tu precio
-            objetivo.
-          </Txt>
-        </Appear>
+          {/* form */}
+          <Appear index={1} style={styles.form}>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field, fieldState }) => (
+                <Field
+                  label="Correo"
+                  placeholder="tucorreo@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  error={fieldState.error?.message}
+                  accessibilityLabel="Correo electrónico"
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="password"
+              render={({ field, fieldState }) => (
+                <Field
+                  label="Contraseña"
+                  placeholder="••••••••"
+                  suffix="Olvidé"
+                  secureTextEntry
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  error={fieldState.error?.message}
+                  accessibilityLabel="Contraseña"
+                />
+              )}
+            />
 
-        {/* form */}
-        <Appear index={1} style={styles.form}>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field, fieldState }) => (
-              <Field
-                label="Correo"
-                placeholder="tucorreo@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={field.value}
-                onChangeText={field.onChange}
-                error={fieldState.error?.message}
-                accessibilityLabel="Correo electrónico"
+            {vm.submitError ? (
+              <Txt variant="caption" color="down">
+                {vm.submitError}
+              </Txt>
+            ) : null}
+
+            <View style={styles.submit}>
+              <Button
+                label="Iniciar sesión"
+                onPress={onSubmit}
+                loading={vm.isSubmitting}
+                disabled={!isValid}
+                full
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="password"
-            render={({ field, fieldState }) => (
-              <Field
-                label="Contraseña"
-                placeholder="••••••••"
-                suffix="Olvidé"
-                secureTextEntry
-                value={field.value}
-                onChangeText={field.onChange}
-                error={fieldState.error?.message}
-                accessibilityLabel="Contraseña"
+            </View>
+          </Appear>
+
+          {/* divider */}
+          <Appear index={2} style={styles.divider}>
+            <View style={styles.hair} />
+            <Txt variant="caption" color="ink3">
+              o continúa con
+            </Txt>
+            <View style={styles.hair} />
+          </Appear>
+
+          {/* social */}
+          <Appear index={3} style={styles.social}>
+            <View style={styles.socialItem}>
+              <Button
+                label="Apple"
+                variant="secondary"
+                onPress={notAvailable}
+                leading={<AppleLogo />}
+                full
               />
-            )}
-          />
+            </View>
+            <View style={styles.socialItem}>
+              <Button
+                label="Google"
+                variant="secondary"
+                onPress={notAvailable}
+                leading={<GoogleLogo />}
+                full
+              />
+            </View>
+          </Appear>
 
-          {vm.submitError ? (
-            <Txt variant="caption" color="down">
-              {vm.submitError}
+          {/* footer */}
+          <Appear index={4} style={styles.footer}>
+            <Txt variant="caption" color="ink3">
+              ¿No tienes cuenta?{' '}
             </Txt>
-          ) : null}
-
-          <View style={styles.submit}>
-            <Button
-              label="Iniciar sesión"
-              onPress={onSubmit}
-              loading={vm.isSubmitting}
-              disabled={!isValid}
-              full
-            />
-          </View>
-        </Appear>
-
-        {/* divider */}
-        <Appear index={2} style={styles.divider}>
-          <View style={styles.hair} />
-          <Txt variant="caption" color="ink3">
-            o continúa con
-          </Txt>
-          <View style={styles.hair} />
-        </Appear>
-
-        {/* social */}
-        <Appear index={3} style={styles.social}>
-          <View style={styles.socialItem}>
-            <Button
-              label="Apple"
-              variant="secondary"
-              onPress={notAvailable}
-              leading={<AppleLogo />}
-              full
-            />
-          </View>
-          <View style={styles.socialItem}>
-            <Button
-              label="Google"
-              variant="secondary"
-              onPress={notAvailable}
-              leading={<GoogleLogo />}
-              full
-            />
-          </View>
-        </Appear>
-
-        {/* footer */}
-        <Appear index={4} style={styles.footer}>
-          <Txt variant="caption" color="ink3">
-            ¿No tienes cuenta?{' '}
-          </Txt>
-          <PressableScale onPress={notAvailable} scaleTo={0.94}>
-            <Txt
-              variant="caption"
-              color="up"
-              style={{ fontFamily: fonts.sans.bold }}
-            >
-              Crear cuenta
-            </Txt>
-          </PressableScale>
-        </Appear>
-      </ScrollView>
+            <PressableScale onPress={notAvailable} scaleTo={0.94}>
+              <Txt
+                variant="caption"
+                color="up"
+                style={{ fontFamily: fonts.sans.bold }}
+              >
+                Crear cuenta
+              </Txt>
+            </PressableScale>
+          </Appear>
+        </ScrollView>
+      </BlurView>
     </KeyboardAvoidingView>
   );
 });

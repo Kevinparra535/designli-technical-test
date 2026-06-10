@@ -7,7 +7,7 @@ import { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-import { colors, shadows } from '@/ui/theme/tokens';
+import { colors, shadows } from '@/ui/styles/tokens';
 
 type Props = { size?: number };
 

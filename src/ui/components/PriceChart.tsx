@@ -18,7 +18,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { colors, fonts } from '@/ui/theme/tokens';
+import { colors, fonts } from '@/ui/styles/tokens';
 
 type Props = {
   data: number[];

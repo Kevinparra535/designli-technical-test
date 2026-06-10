@@ -14,7 +14,7 @@ import {
   Txt,
 } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, type ColorToken, radii, spacing } from '@/ui/theme/tokens';
+import { colors, type ColorToken, radii, spacing } from '@/ui/styles/tokens';
 
 import { PermissionsViewModel } from './PermissionsViewModel';
 

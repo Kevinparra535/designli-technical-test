@@ -15,6 +15,7 @@ export const colors = {
   bg4: '#1F242A', // input / chip
   hair: 'rgba(255,255,255,0.07)', // subtle divider / border
   hair2: 'rgba(255,255,255,0.12)', // stronger border
+  glass: 'rgba(16,19,23,0.55)', // translucent overlay on a BlurView
 
   // Text
   ink: '#F2F5F7', // primary

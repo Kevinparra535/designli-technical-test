@@ -28,18 +28,18 @@
       Txt · Button · Field · Segmented · Delta · Sparkline · Mono · Spinner ·
       Icon · PressableScale · Appear · Toast
 
-    Motion (import from '@/ui/theme/motion'): all timings/easings/springs and the
+    Motion (import from '@/ui/styles/motion'): all timings/easings/springs and the
     press-scale + entrance-stagger constants. The Animated API is the engine (no
     reanimated/babel/native config).
   </context>
 
   <rules>
     <rule id="1">Components are presentational: data and callbacks come in via props only. No domain/data/ViewModel imports.</rule>
-    <rule id="2">Style from tokens — NO hard-coded hex, rgba, or magic numbers in screens or components. Import from '@/ui/theme/tokens'.</rule>
+    <rule id="2">Style from tokens — NO hard-coded hex, rgba, or magic numbers in screens or components. Import from '@/ui/styles/tokens'.</rule>
     <rule id="3">All text uses the Txt primitive (variant-driven). Never raw <Text> with inline fontFamily/fontWeight/fontSize.</rule>
     <rule id="4">Semantic color is meaning, not decoration: green (up) = price up AND the primary brand action; red (down) = price down; amber (warn) = alert fired. Never use up/down/warn decoratively.</rule>
     <rule id="5">Every tappable surface (buttons, rows, chips, icon buttons, tabs) uses PressableScale — never a raw Pressable/TouchableOpacity — so press feedback is uniform.</rule>
-    <rule id="6">All motion pulls from '@/ui/theme/motion' (durations, easings, springs, pressScale, appear). NEVER inline an animation duration/easing literal in a screen or component.</rule>
+    <rule id="6">All motion pulls from '@/ui/styles/motion' (durations, easings, springs, pressScale, appear). NEVER inline an animation duration/easing literal in a screen or component.</rule>
     <rule id="7">List items mount through Appear (pass index for the stagger). Transient confirmations use Toast. Loading uses Spinner. Don't hand-roll these.</rule>
     <rule id="8">Variants are typed unions (e.g. variant: 'primary' | 'secondary' | 'ghost' | 'danger'), not boolean soup. Interactive primitives expose accessibility props (role, label, state).</rule>
     <rule id="9">Numbers/prices use the mono font + tabular-nums (Txt 'price'/'displayMono' variants). Never render a price in the sans family.</rule>
@@ -70,7 +70,7 @@
     <code><![CDATA[
 // Primitives compose tokens + motion — screens just pass props.
 import { StyleSheet, View } from 'react-native';
-import { colors, fonts, radii, shadows } from '@/ui/theme/tokens';
+import { colors, fonts, radii, shadows } from '@/ui/styles/tokens';
 import { PressableScale } from './PressableScale';
 import { Txt } from './Txt';
 

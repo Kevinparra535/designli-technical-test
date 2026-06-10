@@ -5,7 +5,7 @@
 
 import { StyleSheet, View } from 'react-native';
 
-import { colors, fonts, radii } from '@/ui/theme/tokens';
+import { colors, fonts, radii } from '@/ui/styles/tokens';
 
 import { Icon } from './Icon';
 import { Txt } from './Txt';

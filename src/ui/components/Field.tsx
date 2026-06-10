@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, type TextInputProps, View } from 'react-native';
 
-import { colors, fonts, radii } from '@/ui/theme/tokens';
+import { colors, fonts, radii } from '@/ui/styles/tokens';
 
 import { Txt } from './Txt';
 

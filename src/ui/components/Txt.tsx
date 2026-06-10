@@ -6,7 +6,7 @@
 
 import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
-import { colors, type ColorToken, fonts } from '@/ui/theme/tokens';
+import { colors, type ColorToken, fonts } from '@/ui/styles/tokens';
 
 export type TxtVariant =
   | 'display' // big price / hero number (sans)

@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, fonts, radii } from '@/ui/theme/tokens';
+import { colors, fonts, radii } from '@/ui/styles/tokens';
 
 import { PressableScale } from './PressableScale';
 import { Txt } from './Txt';

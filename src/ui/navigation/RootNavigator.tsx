@@ -19,7 +19,7 @@ import { ProfileScreen } from '@/ui/screens/Profile/ProfileScreen';
 import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
 
 import { Icon, type IconName, Spinner } from '@/ui/components';
-import { colors, fonts } from '@/ui/theme/tokens';
+import { colors, fonts } from '@/ui/styles/tokens';
 
 export type AppTabParamList = {
   Home: undefined;

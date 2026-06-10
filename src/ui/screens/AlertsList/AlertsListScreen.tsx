@@ -27,7 +27,7 @@ import {
   Toast,
   Txt,
 } from '@/ui/components';
-import { colors, fonts, radii, spacing } from '@/ui/theme/tokens';
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 import { AlertsListViewModel } from './AlertsListViewModel';
 

@@ -6,7 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 
-import { colors, durations } from '@/ui/theme/tokens';
+import { colors, durations } from '@/ui/styles/tokens';
 
 type Props = {
   size?: number;
