@@ -4,6 +4,11 @@ Full-stack technical test: a React Native (Expo) app and a Node backend that sho
 **real-time stock data** (Finnhub) and send a **Firebase Cloud Messaging** push
 when a stock price crosses a user-defined alert.
 
+
+<video controls autoplay muted loop playsinline width="100%">
+  <source src="./docs/home.mp4" type="video/mp4" />
+</video>
+
 This repo is a monorepo:
 
 ```
@@ -17,10 +22,26 @@ This repo is a monorepo:
 | --- | --- | --- | --- |
 | 1 | Users can log in | ✅ | `src/ui/screens/Login`, `api/src/modules/auth` |
 | 2 | Form to create a stock price alert | ✅ | `src/ui/screens/CreateStockAlert`, `api/.../webhooks` |
-| 3 | List of stocks | ✅ data layer (logged) · ⏳ UI screen | `GetStockListUseCase`, Finnhub `/stock/symbol` |
-| 4 | Graphic of all stocks | ⏳ planned | — |
+| 3 | List of stocks | ✅ | **Mercado** screen — live watchlist (`src/ui/screens/Home`), `GetStockListUseCase` |
+| 4 | Graphic of all stocks | ✅ | Sparkline per stock + aggregate (Home) · area chart per stock (`src/ui/screens/StockDetail`, `PriceChart`) |
 | 5 | FCM push when price > alert | ✅ | `src/.../pushNotificationManager`, `api/src/worker`, `api/src/services/fcm` |
 | ★ | Docker for backend deployment | ✅ | `api/Dockerfile`, `api/docker-compose.prod.yml` |
+
+### Beyond the requirements
+
+The app was taken well past the brief into a production-feel product:
+
+- **Design system** (`src/ui/styles` tokens + `src/ui/components`) — dark
+  "trading-terminal" theme, token-driven primitives, micro-interactions
+  (press-scale, staggered entrances, breathing glow, blur), enforced by
+  [`skills/design-system.md`](./skills/design-system.md).
+- **Real-time everywhere** — Finnhub websocket drives live prices on Home and
+  the detail chart (ref-counted subscriptions so screens share one socket).
+- **Full alert lifecycle** — create (react-hook-form + zod), list, delete and
+  fire a **test push** per alert.
+- **Onboarding + profile** — notification-permissions step and a profile tab.
+- **Architecture enforced by the linter** — `no-restricted-imports` boundaries
+  guarantee the one-way `ui → domain ← data` flow (not just discipline).
 
 ## Tech stack
 
@@ -150,9 +171,11 @@ Backend: `npm run dev` · `npm run build` · `npm start` · `npm run migrate`.
 
 ## Notes & limitations
 
-- The stock list (`/stock/symbol`) returns ~30k symbols; it is fetched and logged
-  on Home. A dedicated list screen and the price **graphic** (feature 4) are the
-  remaining UI work.
+- The full `/stock/symbol` catalog (~30k symbols) is fetched on Home; the
+  **Mercado** screen renders a curated, live watchlist (real websocket prices +
+  REST quotes for the daily change). Charts are built from the live tick stream
+  plus the quote's intraday trajectory — Finnhub's free tier has no historical
+  candles, so the detail range selector is visual (no deep multi-range history).
 - `EXPO_PUBLIC_*` values are inlined into the client bundle — fine for a free
   Finnhub key, but never put a truly secret key in the app.
 - The realtime feed uses Finnhub's free websocket, which periodically drops the
