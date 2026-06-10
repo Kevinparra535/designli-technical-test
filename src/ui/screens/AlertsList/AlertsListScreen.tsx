@@ -17,6 +17,9 @@ import type {
   RootStackParamList,
 } from '@/ui/navigation/RootNavigator';
 
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
+import { fmtDate, fmtUsd } from '@/ui/utils/format';
+
 import {
   Appear,
   Button,
@@ -27,7 +30,6 @@ import {
   Toast,
   Txt,
 } from '@/ui/components';
-import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 import { AlertsListViewModel } from './AlertsListViewModel';
 
@@ -36,18 +38,8 @@ type AlertsNavigation = CompositeNavigationProp<
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-const fmtUsd0 = (n: number) =>
-  '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
-
-const whenLabel = (createdAt: string | null) => {
-  if (!createdAt) return '';
-  const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
-};
-
 export const AlertsListScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () => container.get<AlertsListViewModel>(TYPES.AlertsListViewModel),
     [],
   );
@@ -56,11 +48,11 @@ export const AlertsListScreen = observer(() => {
 
   useFocusEffect(
     useCallback(() => {
-      vm.load();
-    }, [vm]),
+      viewModel.load();
+    }, [viewModel]),
   );
 
-  if (vm.isLoading && vm.alerts.length === 0) {
+  if (viewModel.isLoading && viewModel.alerts.length === 0) {
     return (
       <View style={styles.center}>
         <Spinner size={28} color={colors.up} />
@@ -68,9 +60,11 @@ export const AlertsListScreen = observer(() => {
     );
   }
 
-  const active = vm.alerts.filter((a) => a.active);
-  const paused = vm.alerts.filter((a) => !a.active);
-  const toastTone = vm.testMessage?.startsWith('Test sent') ? 'up' : 'warn';
+  const active = viewModel.alerts.filter((a) => a.active);
+  const paused = viewModel.alerts.filter((a) => !a.active);
+  const toastTone = viewModel.testMessage?.startsWith('Test sent')
+    ? 'up'
+    : 'warn';
 
   return (
     <View style={styles.screen}>
@@ -82,8 +76,8 @@ export const AlertsListScreen = observer(() => {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={vm.isRefreshing}
-            onRefresh={() => vm.refresh()}
+            refreshing={viewModel.isRefreshing}
+            onRefresh={() => viewModel.refresh()}
             tintColor={colors.ink2}
           />
         }
@@ -92,17 +86,18 @@ export const AlertsListScreen = observer(() => {
         <Appear>
           <Txt variant="title">Alertas</Txt>
           <Txt variant="caption" color="ink3" style={styles.subtitle}>
-            {vm.alerts.length} {vm.alerts.length === 1 ? 'regla' : 'reglas'}
+            {viewModel.alerts.length}{' '}
+            {viewModel.alerts.length === 1 ? 'regla' : 'reglas'}
           </Txt>
         </Appear>
 
-        {vm.error ? (
+        {viewModel.error ? (
           <Txt variant="caption" color="down" style={styles.error}>
-            {vm.error}
+            {viewModel.error}
           </Txt>
         ) : null}
 
-        {vm.isEmpty ? (
+        {viewModel.isEmpty ? (
           <Appear index={1} style={styles.empty}>
             <View style={styles.emptyIcon}>
               <Icon name="bell" size={32} color={colors.ink3} />
@@ -132,13 +127,18 @@ export const AlertsListScreen = observer(() => {
         ) : (
           <View style={styles.sections}>
             {active.length > 0 ? (
-              <Section label="Activas" alerts={active} vm={vm} startIndex={1} />
+              <Section
+                label="Activas"
+                alerts={active}
+                viewModel={viewModel}
+                startIndex={1}
+              />
             ) : null}
             {paused.length > 0 ? (
               <Section
                 label="Pausadas"
                 alerts={paused}
-                vm={vm}
+                viewModel={viewModel}
                 startIndex={active.length + 2}
               />
             ) : null}
@@ -146,9 +146,9 @@ export const AlertsListScreen = observer(() => {
         )}
       </ScrollView>
 
-      {vm.testMessage ? (
+      {viewModel.testMessage ? (
         <Toast
-          message={vm.testMessage}
+          message={viewModel.testMessage}
           tone={toastTone}
           icon={
             <Icon
@@ -157,7 +157,7 @@ export const AlertsListScreen = observer(() => {
               color={toastTone === 'up' ? colors.up : colors.warn}
             />
           }
-          onHide={() => vm.clearTestMessage()}
+          onHide={() => viewModel.clearTestMessage()}
         />
       ) : null}
     </View>
@@ -167,12 +167,12 @@ export const AlertsListScreen = observer(() => {
 const Section = ({
   label,
   alerts,
-  vm,
+  viewModel,
   startIndex,
 }: {
   label: string;
   alerts: StockAlert[];
-  vm: AlertsListViewModel;
+  viewModel: AlertsListViewModel;
   startIndex: number;
 }) => (
   <View style={styles.section}>
@@ -183,10 +183,10 @@ const Section = ({
       <Appear key={a.id} index={startIndex + i}>
         <AlertRowItem
           alert={a}
-          testing={vm.testingId === a.id}
-          deleting={vm.deletingId === a.id}
-          onTest={() => vm.test(a.id)}
-          onDelete={() => vm.delete(a.id)}
+          testing={viewModel.testingId === a.id}
+          deleting={viewModel.deletingId === a.id}
+          onTest={() => viewModel.test(a.id)}
+          onDelete={() => viewModel.delete(a.id)}
         />
       </Appear>
     ))}
@@ -208,7 +208,7 @@ const AlertRowItem = ({
 }) => {
   const isAbove = alert.condition === 'above';
   const busy = testing || deleting;
-  const when = whenLabel(alert.createdAt ?? null);
+  const when = fmtDate(alert.createdAt ?? null);
 
   return (
     <View style={[styles.row, !alert.active && styles.rowPaused]}>
@@ -244,7 +244,7 @@ const AlertRowItem = ({
             {isAbove ? 'Sube de' : 'Baja de'}
           </Txt>
           <Txt variant="price" color="ink2" style={styles.condPrice}>
-            {fmtUsd0(alert.targetPrice)}
+            {fmtUsd(alert.targetPrice, 0)}
           </Txt>
           {when ? (
             <>

@@ -11,6 +11,9 @@ import { TYPES } from '@/config/types';
 
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
+import { displaySymbol, fmtSigned, fmtUsd } from '@/ui/utils/format';
+
 import {
   Appear,
   Button,
@@ -22,7 +25,6 @@ import {
   Spinner,
   Txt,
 } from '@/ui/components';
-import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 import { StockDetailViewModel } from './StockDetailViewModel';
 
@@ -33,23 +35,8 @@ type DetailNavigation = NativeStackNavigationProp<
 
 const RANGES = ['1H', '1D', '1S', '1M', '1A', 'Máx'] as const;
 
-const fmtUsd = (n: number, d = 2) =>
-  '$' +
-  n.toLocaleString('en-US', {
-    minimumFractionDigits: d,
-    maximumFractionDigits: d,
-  });
-
-const fmtSigned = (n: number) =>
-  (n >= 0 ? '+' : '−') + '$' + Math.abs(n).toFixed(2);
-
-const displayOf = (symbol: string) =>
-  symbol.includes(':')
-    ? (symbol.split(':')[1] ?? symbol).replace('USDT', '')
-    : symbol;
-
 export const StockDetailScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () => container.get<StockDetailViewModel>(TYPES.StockDetailViewModel),
     [],
   );
@@ -60,11 +47,11 @@ export const StockDetailScreen = observer(() => {
   const [range, setRange] = useState<(typeof RANGES)[number]>('1D');
 
   useEffect(() => {
-    vm.load(symbol);
-    return () => vm.dispose();
-  }, [vm, symbol]);
+    viewModel.load(symbol);
+    return () => viewModel.dispose();
+  }, [viewModel, symbol]);
 
-  const display = displayOf(symbol);
+  const display = displaySymbol(symbol);
   const goCreateAlert = () =>
     navigation.navigate('CreateStockAlert', { symbol });
 
@@ -89,14 +76,14 @@ export const StockDetailScreen = observer(() => {
         </View>
       </View>
 
-      {vm.isLoading ? (
+      {viewModel.isLoading ? (
         <View style={styles.center}>
           <Spinner size={28} color={colors.up} />
         </View>
-      ) : vm.error ? (
+      ) : viewModel.error ? (
         <View style={styles.center}>
           <Txt variant="body" color="down" align="center">
-            {vm.error}
+            {viewModel.error}
           </Txt>
         </View>
       ) : (
@@ -108,24 +95,26 @@ export const StockDetailScreen = observer(() => {
           <Appear>
             <View style={styles.priceBlock}>
               <Txt variant="caption" color="ink3">
-                {vm.profile?.name || display}
-                {vm.profile?.exchange ? ` · ${vm.profile.exchange}` : ''}
+                {viewModel.profile?.name || display}
+                {viewModel.profile?.exchange
+                  ? ` · ${viewModel.profile.exchange}`
+                  : ''}
               </Txt>
               <Txt variant="displayMono" style={styles.bigPrice}>
-                {vm.priceAvailable ? fmtUsd(vm.price) : '—'}
+                {viewModel.priceAvailable ? fmtUsd(viewModel.price) : '—'}
               </Txt>
-              {vm.priceAvailable ? (
+              {viewModel.priceAvailable ? (
                 <View style={styles.changeRow}>
-                  <Delta pct={vm.percentChange} />
+                  <Delta pct={viewModel.percentChange} />
                   <Txt
                     style={{
                       fontFamily: fonts.mono.semibold,
                       fontSize: 13,
-                      color: vm.isUp ? colors.up : colors.down,
+                      color: viewModel.isUp ? colors.up : colors.down,
                     }}
                   >
-                    {`${fmtSigned(vm.changeValue)} ${
-                      vm.hasQuote ? 'hoy' : 'en la sesión'
+                    {`${fmtSigned(viewModel.changeValue)} ${
+                      viewModel.hasQuote ? 'hoy' : 'en la sesión'
                     }`}
                   </Txt>
                 </View>
@@ -138,19 +127,19 @@ export const StockDetailScreen = observer(() => {
           </Appear>
 
           {/* chart (real intraday trajectory from the quote) */}
-          {vm.series.length >= 2 ? (
+          {viewModel.series.length >= 2 ? (
             <Appear index={1} style={styles.chart}>
               <PriceChart
-                data={vm.series}
-                up={vm.isUp}
-                target={vm.alert?.targetPrice ?? null}
+                data={viewModel.series}
+                up={viewModel.isUp}
+                target={viewModel.alert?.targetPrice ?? null}
                 height={200}
               />
             </Appear>
           ) : null}
 
           {/* range selector */}
-          {vm.hasQuote ? (
+          {viewModel.hasQuote ? (
             <Appear index={2} style={styles.ranges}>
               {RANGES.map((r) => {
                 const on = r === range;
@@ -179,15 +168,21 @@ export const StockDetailScreen = observer(() => {
           ) : null}
 
           {/* stats */}
-          {vm.hasQuote && vm.quote ? (
+          {viewModel.hasQuote && viewModel.quote ? (
             <Appear index={3} style={styles.statsWrap}>
               <View style={styles.stats}>
-                <StatCell label="Apertura" value={fmtUsd(vm.quote.open)} />
-                <StatCell label="Máx día" value={fmtUsd(vm.quote.high)} />
-                <StatCell label="Mín día" value={fmtUsd(vm.quote.low)} />
+                <StatCell
+                  label="Apertura"
+                  value={fmtUsd(viewModel.quote.open)}
+                />
+                <StatCell
+                  label="Máx día"
+                  value={fmtUsd(viewModel.quote.high)}
+                />
+                <StatCell label="Mín día" value={fmtUsd(viewModel.quote.low)} />
                 <StatCell
                   label="Cierre ant."
-                  value={fmtUsd(vm.quote.previousClose)}
+                  value={fmtUsd(viewModel.quote.previousClose)}
                 />
               </View>
             </Appear>
@@ -195,7 +190,7 @@ export const StockDetailScreen = observer(() => {
 
           {/* alert CTA */}
           <Appear index={4} style={styles.cta}>
-            {vm.alert ? (
+            {viewModel.alert ? (
               <View style={styles.alertCard}>
                 <View style={styles.alertIcon}>
                   <Icon name="bell" size={19} color={colors.warn} />
@@ -204,10 +199,10 @@ export const StockDetailScreen = observer(() => {
                   <Txt variant="bodyStrong">Alerta activa</Txt>
                   <Txt variant="caption" color="ink2">
                     {`Te avisamos ${
-                      vm.alert.condition === 'above'
+                      viewModel.alert.condition === 'above'
                         ? 'al subir de'
                         : 'al bajar de'
-                    } ${fmtUsd(vm.alert.targetPrice, 0)}`}
+                    } ${fmtUsd(viewModel.alert.targetPrice, 0)}`}
                   </Txt>
                 </View>
                 <PressableScale

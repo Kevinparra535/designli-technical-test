@@ -18,8 +18,9 @@ import { PermissionsScreen } from '@/ui/screens/Permissions/PermissionsScreen';
 import { ProfileScreen } from '@/ui/screens/Profile/ProfileScreen';
 import { StockDetailScreen } from '@/ui/screens/StockDetail/StockDetailScreen';
 
-import { Icon, type IconName, Spinner } from '@/ui/components';
 import { colors, fonts } from '@/ui/styles/tokens';
+
+import { Icon, type IconName, Spinner } from '@/ui/components';
 
 export type AppTabParamList = {
   Home: undefined;

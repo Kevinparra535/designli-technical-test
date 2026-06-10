@@ -15,6 +15,9 @@ import type {
   RootStackParamList,
 } from '@/ui/navigation/RootNavigator';
 
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
+import { fmtUsd } from '@/ui/utils/format';
+
 import {
   Appear,
   Delta,
@@ -26,7 +29,6 @@ import {
   Txt,
 } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
 
 import { HomeViewModel, type MarketRow } from './HomeViewModel';
 
@@ -37,20 +39,13 @@ type HomeNavigation = CompositeNavigationProp<
 
 type Tab = 'watch' | 'movers';
 
-const fmtUsd = (n: number) =>
-  '$' +
-  n.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
 const greeting = (email?: string) => {
   const name = email ? email.split('@')[0] : '';
   return name ? `Hola, ${name}` : 'Hola';
 };
 
 export const HomeScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () => container.get<HomeViewModel>(TYPES.HomeViewModel),
     [],
   );
@@ -63,11 +58,11 @@ export const HomeScreen = observer(() => {
   const [tab, setTab] = useState<Tab>('watch');
 
   useEffect(() => {
-    vm.initialize();
-    return () => vm.dispose();
-  }, [vm]);
+    viewModel.initialize();
+    return () => viewModel.dispose();
+  }, [viewModel]);
 
-  if (vm.isInitLoading) {
+  if (viewModel.isInitLoading) {
     return (
       <View style={styles.center}>
         <Spinner size={28} color={colors.up} />
@@ -75,7 +70,7 @@ export const HomeScreen = observer(() => {
     );
   }
 
-  const rows = tab === 'watch' ? vm.rows : vm.movers;
+  const rows = tab === 'watch' ? viewModel.rows : viewModel.movers;
 
   return (
     <View style={styles.screen}>
@@ -118,18 +113,20 @@ export const HomeScreen = observer(() => {
             <View style={styles.cardRow}>
               <View>
                 <Txt variant="displayMono">
-                  {vm.totalValue > 0 ? fmtUsd(vm.totalValue) : '—'}
+                  {viewModel.totalValue > 0
+                    ? fmtUsd(viewModel.totalValue)
+                    : '—'}
                 </Txt>
                 <View style={styles.cardDelta}>
-                  <Delta pct={vm.totalPct} size="sm" />
+                  <Delta pct={viewModel.totalPct} size="sm" />
                   <Txt variant="caption" color="ink3">
                     hoy
                   </Txt>
                 </View>
               </View>
               <Sparkline
-                data={vm.aggregateHistory}
-                up={vm.totalPct >= 0}
+                data={viewModel.aggregateHistory}
+                up={viewModel.totalPct >= 0}
                 width={96}
                 height={48}
                 strokeWidth={2.2}

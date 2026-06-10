@@ -8,7 +8,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { observer } from 'mobx-react-lite';
 import { BlurView } from 'expo-blur';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,29 +18,28 @@ import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
 import { colors, fonts, screenPad, spacing } from '@/ui/styles/tokens';
+import { fmtPct } from '@/ui/utils/format';
 
 import {
   Appear,
   BrandMark,
+  BreathingGlow,
   Button,
   Field,
+  Marquee,
   PressableScale,
   Txt,
 } from '@/ui/components';
+import { loginSchema } from '@/ui/schemas';
 
 import { SessionViewModel } from './SessionViewModel';
 
-const schema = z.object({
-  email: z
-    .string()
-    .trim()
-    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Correo no válido.'),
-  password: z.string().min(6, 'Mínimo 6 caracteres.'),
-});
+import { AppleLogo, GoogleLogo } from './components/SocialLogos';
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<typeof loginSchema>;
 
-// Faint ticker tape for atmosphere (decorative).
+// Faint ticker tape for atmosphere (decorative). Kept long enough that one copy
+// is wider than the screen so the marquee loop has no gaps.
 const TICKERS = [
   { sym: 'NVDA', pct: 3.42 },
   { sym: 'AAPL', pct: 0.86 },
@@ -49,13 +47,14 @@ const TICKERS = [
   { sym: 'MSFT', pct: 1.2 },
   { sym: 'COIN', pct: 5.1 },
   { sym: 'META', pct: -0.77 },
+  { sym: 'GOOGL', pct: 1.95 },
+  { sym: 'AMD', pct: -1.42 },
+  { sym: 'AMZN', pct: 0.54 },
+  { sym: 'NFLX', pct: 2.18 },
 ];
 
-const fmtPct = (n: number) =>
-  (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(2) + '%';
-
 export const LoginScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () => container.get<SessionViewModel>(TYPES.SessionViewModel),
     [],
   );
@@ -65,7 +64,7 @@ export const LoginScreen = observer(() => {
     handleSubmit,
     formState: { isValid },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(loginSchema),
     mode: 'onChange',
     // Demo convenience: prefilled working test credentials → one-tap sign-in.
     defaultValues: {
@@ -77,23 +76,35 @@ export const LoginScreen = observer(() => {
   const onSubmit = handleSubmit(async (values) => {
     // On success the RootNavigator swaps to the app stack automatically
     // (it observes session.isAuthenticated); on failure submitError shows below.
-    await vm.signIn({ email: values.email.trim(), password: values.password });
+    await viewModel.signIn({
+      email: values.email.trim(),
+      password: values.password,
+    });
   });
 
   const notAvailable = () =>
     Alert.alert('Próximamente', 'Esta opción aún no está disponible.');
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <BlurView style={styles.flex} intensity={100} tint="dark">
-        {/* ambient green glow */}
-        <View pointerEvents="none" style={styles.glow} />
+    <BlurView style={styles.flex} intensity={50} tint="dark">
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* breathing ambient glow — soft orbs that pulse + drift */}
+        <BreathingGlow />
+        {/* blur layer sits ON TOP of the glow (but under the content) so the
+            BlurView defocuses the hard circle into a soft halo. */}
+        <BlurView
+          pointerEvents="none"
+          tint="dark"
+          intensity={70}
+          blurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+        />
 
-        {/* faint ticker tape */}
-        <View pointerEvents="none" style={styles.ticker}>
+        {/* infinite ticker tape */}
+        <Marquee style={styles.ticker} speed={42}>
           {TICKERS.map((t) => (
             <View key={t.sym} style={styles.tickerItem}>
               <Txt
@@ -110,7 +121,7 @@ export const LoginScreen = observer(() => {
               </Txt>
             </View>
           ))}
-        </View>
+        </Marquee>
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -164,9 +175,9 @@ export const LoginScreen = observer(() => {
               )}
             />
 
-            {vm.submitError ? (
+            {viewModel.submitError ? (
               <Txt variant="caption" color="down">
-                {vm.submitError}
+                {viewModel.submitError}
               </Txt>
             ) : null}
 
@@ -174,7 +185,7 @@ export const LoginScreen = observer(() => {
               <Button
                 label="Iniciar sesión"
                 onPress={onSubmit}
-                loading={vm.isSubmitting}
+                loading={viewModel.isSubmitting}
                 disabled={!isValid}
                 full
               />
@@ -228,74 +239,27 @@ export const LoginScreen = observer(() => {
             </PressableScale>
           </Appear>
         </ScrollView>
-      </BlurView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </BlurView>
   );
 });
 
-// Brand logos — fixed brand colors (not theme tokens).
-function AppleLogo({ size = 19 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        fill={colors.ink}
-        d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.7 2.2 1.1 0 1.5-.7 2.8-.7s1.7.7 2.8.7 1.9-1.1 2.6-2.1c.8-1.2 1.2-2.3 1.2-2.4-.1 0-2.3-.9-2.3-3.5Z"
-      />
-      <Path
-        fill={colors.ink}
-        d="M14.6 6.2c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.2Z"
-      />
-    </Svg>
-  );
-}
-
-function GoogleLogo({ size = 18 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        fill="#4285F4"
-        d="M22 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.6c-.2 1.3-1 2.4-2 3.1v2.6h3.3c1.9-1.8 3-4.4 3-7.6Z"
-      />
-      <Path
-        fill="#34A853"
-        d="M12 22c2.7 0 5-.9 6.6-2.4l-3.3-2.6c-.9.6-2 1-3.3 1-2.6 0-4.7-1.7-5.5-4.1H3.1v2.6C4.8 19.8 8.1 22 12 22Z"
-      />
-      <Path
-        fill="#FBBC05"
-        d="M6.5 13.9c-.2-.6-.3-1.2-.3-1.9s.1-1.3.3-1.9V7.5H3.1C2.4 8.9 2 10.4 2 12s.4 3.1 1.1 4.5l3.4-2.6Z"
-      />
-      <Path
-        fill="#EA4335"
-        d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.7 2 12 2 8.1 2 4.8 4.2 3.1 7.5l3.4 2.6C7.3 7.7 9.4 6 12 6Z"
-      />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  glow: {
-    position: 'absolute',
-    top: -160,
-    alignSelf: 'center',
-    width: 420,
-    height: 360,
-    borderRadius: 210,
-    backgroundColor: colors.upDim,
-    opacity: 0.6,
-  },
   ticker: {
     position: 'absolute',
-    top: 56,
+    bottom: 56,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 18,
-    paddingHorizontal: 20,
     opacity: 0.5,
   },
-  tickerItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginRight: 20,
+    flexShrink: 0,
+  },
   content: {
     flexGrow: 1,
     justifyContent: 'center',

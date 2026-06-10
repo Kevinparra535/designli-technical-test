@@ -15,28 +15,20 @@ import type { AlertCondition } from '@/domain/entities/StockAlert';
 
 import type { RootStackParamList } from '@/ui/navigation/RootNavigator';
 
+import { colors, screenPad, spacing } from '@/ui/styles/tokens';
+
 import type { SegmentOption } from '@/ui/components';
 import { Appear, Button, Field, Segmented, Txt } from '@/ui/components';
-import { colors, screenPad, spacing } from '@/ui/styles/tokens';
+import { stockAlertSchema } from '@/ui/schemas';
 
 import { CreateStockAlertViewModel } from './CreateStockAlertViewModel';
 
 // Client-side validation lives here (UI concern); the ViewModel owns the
 // business action. targetPrice stays a string for the TextInput and is parsed
 // on submit.
-const schema = z.object({
-  symbol: z.string().trim().min(1, 'Enter a symbol.'),
-  targetPrice: z
-    .string()
-    .min(1, 'Enter a price.')
-    .refine((v) => {
-      const n = Number(v.replace(',', '.'));
-      return Number.isFinite(n) && n > 0;
-    }, 'Enter a valid price greater than 0.'),
-  condition: z.enum(['above', 'below']),
-});
 
-type FormValues = z.infer<typeof schema>;
+
+type FormValues = z.infer<typeof stockAlertSchema>;
 
 const CONDITION_OPTIONS: SegmentOption<AlertCondition>[] = [
   { value: 'above', label: 'Above ▲', tone: 'up' },
@@ -44,7 +36,7 @@ const CONDITION_OPTIONS: SegmentOption<AlertCondition>[] = [
 ];
 
 export const CreateStockAlertScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () =>
       container.get<CreateStockAlertViewModel>(TYPES.CreateStockAlertViewModel),
     [],
@@ -62,7 +54,7 @@ export const CreateStockAlertScreen = observer(() => {
     handleSubmit,
     formState: { isValid },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(stockAlertSchema),
     mode: 'onChange',
     defaultValues: {
       symbol: presetSymbol?.toUpperCase() ?? '',
@@ -73,7 +65,7 @@ export const CreateStockAlertScreen = observer(() => {
 
   const onSubmit = handleSubmit(async (values) => {
     const symbol = values.symbol.trim().toUpperCase();
-    const ok = await vm.submit({
+    const ok = await viewModel.submit({
       symbol,
       targetPrice: Number(values.targetPrice.replace(',', '.')),
       condition: values.condition,
@@ -88,7 +80,7 @@ export const CreateStockAlertScreen = observer(() => {
     } else {
       Alert.alert(
         "Couldn't create the alert",
-        vm.submitError ?? 'Please try again.',
+        viewModel.submitError ?? 'Please try again.',
       );
     }
   });
@@ -167,7 +159,7 @@ export const CreateStockAlertScreen = observer(() => {
           <Button
             label="Create alert"
             onPress={onSubmit}
-            loading={vm.isSubmitting}
+            loading={viewModel.isSubmitting}
             disabled={!isValid}
             full
           />

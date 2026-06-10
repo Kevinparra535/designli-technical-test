@@ -4,10 +4,12 @@
 
 export { Appear } from './Appear';
 export { BrandMark } from './BrandMark';
+export { BreathingGlow } from './BreathingGlow';
 export { Button } from './Button';
 export { Delta } from './Delta';
 export { Field } from './Field';
 export { Icon, type IconName } from './Icon';
+export { Marquee } from './Marquee';
 export { Mono } from './Mono';
 export { PressableScale } from './PressableScale';
 export { PriceChart } from './PriceChart';

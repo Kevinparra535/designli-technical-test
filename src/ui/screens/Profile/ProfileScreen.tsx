@@ -6,19 +6,11 @@ import { observer } from 'mobx-react-lite';
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
 
+import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
+import { accountInitials, accountName } from '@/ui/utils/format';
+
 import { Appear, Button, Txt } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, fonts, radii, spacing } from '@/ui/styles/tokens';
-
-const initialsOf = (email?: string) => {
-  const local = email ? email.split('@')[0] : '';
-  return (local.slice(0, 2) || '?').toUpperCase();
-};
-
-const nameOf = (email?: string) => {
-  const local = email ? email.split('@')[0] : '';
-  return local ? local.charAt(0).toUpperCase() + local.slice(1) : 'Tu cuenta';
-};
 
 export const ProfileScreen = observer(() => {
   const session = useMemo(
@@ -68,11 +60,11 @@ export const ProfileScreen = observer(() => {
                   color: colors.up,
                 }}
               >
-                {initialsOf(email)}
+                {accountInitials(email)}
               </Txt>
             </View>
             <View style={styles.identity}>
-              <Txt variant="headline">{nameOf(email)}</Txt>
+              <Txt variant="headline">{accountName(email)}</Txt>
               <Txt variant="caption" color="ink3">
                 {email ?? '—'}
               </Txt>

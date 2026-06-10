@@ -1,9 +1,12 @@
-import { useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import { BlurView } from 'expo-blur';
 
 import { container } from '@/config/di';
 import { TYPES } from '@/config/types';
+
+import { colors, type ColorToken, radii, spacing } from '@/ui/styles/tokens';
 
 import {
   Appear,
@@ -14,7 +17,6 @@ import {
   Txt,
 } from '@/ui/components';
 import { SessionViewModel } from '@/ui/screens/Login/SessionViewModel';
-import { colors, type ColorToken, radii, spacing } from '@/ui/styles/tokens';
 
 import { PermissionsViewModel } from './PermissionsViewModel';
 
@@ -51,7 +53,7 @@ const BENEFITS: Benefit[] = [
 ];
 
 export const PermissionsScreen = observer(() => {
-  const vm = useMemo(
+  const viewModel = useMemo(
     () => container.get<PermissionsViewModel>(TYPES.PermissionsViewModel),
     [],
   );
@@ -63,7 +65,7 @@ export const PermissionsScreen = observer(() => {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onEnable = async () => {
-    const granted = await vm.enable();
+    const granted = await viewModel.enable();
     if (granted) {
       // Let the success state breathe, then enter the app.
       timer.current = setTimeout(
@@ -78,7 +80,7 @@ export const PermissionsScreen = observer(() => {
     session.completePermissionsOnboarding();
   };
 
-  const granted = vm.isGranted;
+  const granted = viewModel.isGranted;
 
   return (
     <ScrollView
@@ -88,6 +90,14 @@ export const PermissionsScreen = observer(() => {
     >
       {/* ambient amber glow */}
       <View pointerEvents="none" style={styles.glow} />
+
+      <BlurView
+        pointerEvents="none"
+        tint="dark"
+        intensity={80}
+        blurMethod="dimezisBlurView"
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* bell hero */}
       <Appear>
@@ -154,7 +164,7 @@ export const PermissionsScreen = observer(() => {
             <Button
               label="Activar notificaciones"
               onPress={onEnable}
-              loading={vm.isRequesting}
+              loading={viewModel.isRequesting}
               leading={<Icon name="bell" size={19} color={colors.upInk} />}
               full
             />
@@ -170,7 +180,7 @@ export const PermissionsScreen = observer(() => {
               </Txt>
             </PressableScale>
 
-            {vm.wasDenied ? (
+            {viewModel.wasDenied ? (
               <Txt variant="caption" color="ink3" align="center">
                 No se concedió el permiso. Puedes activarlo luego en Ajustes.
               </Txt>
